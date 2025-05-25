@@ -12,7 +12,7 @@ import {
 
 // Utility function to calculate bill status (copy from your Bill component)
 const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => {
-    const baseAmount = customer.price * (deliveryData[customer._id]?.totalDelivered ?? 0);
+    const baseAmount = customer.price * customer.quantity * (deliveryData[customer._id]?.totalDelivered ?? 0);
     const extraAmount = extraMap[customer.name] ? (extraMap[customer.name] * customer.price) : 0;
     const currentTotalBill = baseAmount + extraAmount;
     const existingBill = settledBills[customer.name];

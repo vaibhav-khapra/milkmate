@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import {
     FiChevronDown,
     FiCheck,
+    FiAlertCircle,
     FiX,
     FiCalendar,
     FiRefreshCw,
@@ -21,7 +22,9 @@ import {
     FiPlus
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
-import SummaryCards from '../components/Summary'
+
+
+
 
 const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => {
     const baseAmount = customer.price * customer.quantity *(deliveryData[customer._id]?.totalDelivered ?? 0);
@@ -160,6 +163,9 @@ export default function Bill() {
             setLoading(false)
         }
     }
+    
+
+    
 
     const fetchSettledBills = async () => {
         try {
@@ -232,6 +238,20 @@ export default function Bill() {
             router.push('/')
         }
     }, [status, router])
+    const handleRefresh = () => {
+        setRefreshing(true);
+        fetchData();
+        fetchExtras();
+        fetchSettledBills();
+    };
+    const totalCustomers = customers.length;
+     const pendingBills = useMemo(() => {
+            return customers.filter(customer => {
+                const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
+                return !billStatus.isSettled;
+            }).length;
+        }, [customers, deliveryData, extraMap, settledBills]);
+    const settledCount = totalCustomers - pendingBills;
 
     useEffect(() => {
         if (apiData.customers.length > 0) {
@@ -370,12 +390,13 @@ export default function Bill() {
         setSelectedYear(selectedOption.year)
     }
 
-    const calculateTotalSales = (customers, deliveryData, extraMap, settledBills) => {
+    const calculateTotalSales = () => {
         return customers.reduce((total, customer) => {
             const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
             return total + billStatus.totalBill;
         }, 0);
     };
+    const totalSales = calculateTotalSales();
 
     const summaryStats = useMemo(() => {
         const totalCustomers = customers.length;
@@ -398,6 +419,7 @@ export default function Bill() {
         return (
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
+
                 <div className="p-6 max-w-6xl mx-auto">
                     <Skeleton height={40} width={240} className="mb-8 rounded-lg" />
                     <div className="grid gap-6">
@@ -416,8 +438,103 @@ export default function Bill() {
         <div className="min-h-screen bg-gray-50">
             <Navbar />
 
+
             <main className="p-4 md:p-8 max-w-7xl mx-auto">
-                <SummaryCards title="Billing"></SummaryCards>
+                <div>
+                    <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Billing Overview</h1>
+                        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-shadow">
+                                <FiCalendar className="text-gray-500" />
+                                <select
+                                    value={selectedMonth}
+                                    onChange={handleMonthChange}
+                                    className="appearance-none bg-transparent pr-8 py-1 text-gray-700 focus:outline-none cursor-pointer"
+                                >
+                                    {monthOptions.map((option) => (
+                                        <option key={`${option.year}-${option.value}`} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {/* Chevron icon not added here to keep minimal */}
+                            </div>
+
+                            <button
+                                onClick={handleRefresh}
+                                disabled={refreshing}
+                                className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg border border-blue-100 hover:bg-blue-50 transition-colors shadow-sm whitespace-nowrap"
+                            >
+                                <FiRefreshCw className={`${refreshing ? 'animate-spin' : ''}`} />
+                                {refreshing ? 'Refreshing...' : 'Refresh'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500">Total Customers</p>
+                                    <p className="text-2xl font-bold text-gray-800">{totalCustomers}</p>
+                                </div>
+                                <div className="p-3 bg-blue-50 rounded-full">
+                                    <FiUser className="text-blue-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500">Pending Bills</p>
+                                    <p className="text-2xl font-bold text-yellow-600">{pendingBills}</p>
+                                </div>
+                                <div className="p-3 bg-yellow-50 rounded-full">
+                                    <FiAlertCircle className="text-yellow-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500">Current Month</p>
+                                    <p className="text-xl font-bold text-gray-800">
+                                        {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-green-50 rounded-full">
+                                    <FiCalendar className="text-green-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500">Settled Bills</p>
+                                    <p className="text-2xl font-bold text-green-600">{settledCount}</p>
+                                </div>
+                                <div className="p-3 bg-green-50 rounded-full">
+                                    <FiCheck className="text-green-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500">Total Sales</p>
+                                    <p className="text-2xl font-bold text-purple-600">₹{totalSales.toLocaleString('en-IN')}</p>
+                                </div>
+                                <div className="p-3 bg-purple-50 rounded-full">
+                                    <FiDollarSign className="text-purple-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="grid gap-6">
