@@ -124,7 +124,7 @@ const Page = () => {
                                     <input
                                         id="quantity"
                                         type="number"
-                                        step="0.1"
+                                        step="0.01"
                                         {...register("quantity", {
                                             required: "Quantity is required",
                                             min: {
