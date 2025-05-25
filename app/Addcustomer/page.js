@@ -128,7 +128,7 @@ const Page = () => {
                                         {...register("quantity", {
                                             required: "Quantity is required",
                                             min: {
-                                                value: 0.1,
+                                                value: 0.01,
                                                 message: "Quantity must be at least 0.1 litres"
                                             }
                                         })}
