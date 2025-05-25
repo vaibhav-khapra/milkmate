@@ -3,9 +3,10 @@ import connectToDatabase from '@/app/conn/db'
 import Bill from '@/models/Bill'
 
 // Ensure DB is connected before handling the request
-await connectToDatabase()
+
 
 export async function POST(req) {
+    await connectToDatabase()
     try {
         const { ownerEmail, month, year } = await req.json()
 
