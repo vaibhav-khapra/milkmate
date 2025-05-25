@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import connectToDatabase from '@/app/conn/db'
 import Bill from '@/models/Bill'
 
-// Ensure DB is connected before handling the request
 
 
 export async function POST(req) {
