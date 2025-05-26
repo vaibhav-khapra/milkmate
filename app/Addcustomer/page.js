@@ -169,7 +169,7 @@ const Page = () => {
                                     <input
                                         id="startDate"
                                         type='date'
-                                        {...register("startDate", { required: "This field is required" })}
+                                        {...register("startDate", { required: true , message:"This field is required" })}
 
                                         className={`w-full px-4 py-3 rounded-lg border ${errors.startDate ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} focus:outline-none focus:ring-2`}
                                     />

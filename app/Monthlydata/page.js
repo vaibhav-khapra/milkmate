@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { FiChevronDown, FiCheck, FiX, FiCalendar } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 import DeliveryStatusComponent from '../components/DeliveryStatusComponent';
+import { useRouter } from 'next/navigation';
 
 const Monthlydata = () => {
     const { data: session, status } = useSession();
@@ -35,10 +36,16 @@ const Monthlydata = () => {
     };
 
     const monthOptions = getMonthOptions();
+    const router = useRouter()
 
     useEffect(() => {
         if (status === 'authenticated') {
             fetchData();
+        }
+    }, [status]);
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            router.push("/")
         }
     }, [status]);
 
