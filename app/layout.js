@@ -27,6 +27,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Analytics />
         <ToastContainer position="top-right"  autoClose={3000} />
         <Toaster position="top-center" reverseOrder={false} />
         <SessionWrapper>
