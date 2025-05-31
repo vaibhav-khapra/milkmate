@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 import Skeleton from 'react-loading-skeleton'
@@ -23,11 +23,17 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
-
-
+// Utility functions
+const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+}
 
 const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => {
-    const baseAmount = customer.price * customer.quantity *(deliveryData[customer._id]?.totalDelivered ?? 0);
+    const baseAmount = customer.price * customer.quantity * (deliveryData[customer._id]?.totalDelivered ?? 0);
     const extraAmount = extraMap[customer.name] ? (extraMap[customer.name] * customer.price) : 0;
     const currentTotalBill = baseAmount + extraAmount;
     const existingBill = settledBills[customer.name];
@@ -71,7 +77,305 @@ const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => 
     }
 };
 
-export default function Bill() {
+const getMonthOptions = () => {
+    const currentDate = new Date()
+    const currentMonth = currentDate.getMonth()
+    const currentYear = currentDate.getFullYear()
+    const options = []
+
+    for (let i = 0; i < 6; i++) {
+        const month = (currentMonth - i + 12) % 12
+        const year = month > currentMonth ? currentYear - 1 : currentYear
+        options.push({
+            value: month,
+            year: year,
+            label: new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })
+        })
+    }
+
+    return options
+}
+
+// Components
+const SettlementModal = ({
+    isOpen,
+    onClose,
+    customer,
+    month,
+    year,
+    billStatus,
+    onSettle,
+    isLoading
+}) => {
+    const [paidAmount, setPaidAmount] = useState('')
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        onSettle(paidAmount)
+    }
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, y: 20 }}
+                        className="bg-white rounded-xl p-6 w-full max-w-md"
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-semibold text-gray-800">Settle Bill</h3>
+                            <button
+                                onClick={onClose}
+                                className="text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                <FiX size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                                <p className="text-gray-600">Customer: <span className="font-medium">{customer.name}</span></p>
+                                <p className="text-gray-600">Month: <span className="font-medium">
+                                    {new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                </span></p>
+                            </div>
+
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                <div className="flex justify-between items-center">
+                                    <p className="text-gray-800 font-medium">Total Bill:</p>
+                                    <p className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</p>
+                                </div>
+                                {billStatus.paid > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-blue-100">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-gray-700 text-sm">Already Paid:</p>
+                                            <p className="font-mono text-sm text-green-600">₹{billStatus.paid.toFixed(2)}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-gray-700 text-sm">Remaining:</p>
+                                            <p className="font-mono text-sm text-yellow-600">₹{billStatus.remaining.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="paidAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Amount Paid
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                                    <input
+                                        type="number"
+                                        id="paidAmount"
+                                        value={paidAmount}
+                                        onChange={(e) => {
+                                            const value = Math.min(Number(e.target.value), billStatus.remaining);
+                                            setPaidAmount(value);
+                                        }}
+                                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder={`Enter amount (max ₹${billStatus.remaining.toFixed(2)})`}
+                                        max={billStatus.remaining}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {paidAmount && (
+                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-700">New Payment:</span>
+                                        <span className="font-mono font-medium">₹{Number(paidAmount).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-gray-700">Remaining After Payment:</span>
+                                        <span className="font-mono font-medium">
+                                            ₹{(billStatus.remaining - Number(paidAmount)).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || !paidAmount}
+                                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                                >
+                                    {isLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <FiRefreshCw className="animate-spin" />
+                                            Processing...
+                                        </span>
+                                    ) : 'Settle Bill'}
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    )
+}
+
+const CustomerBillCard = ({
+    customer,
+    deliveryData,
+    extraMap,
+    settledBills,
+    onSettleClick
+}) => {
+    const billStatus = useMemo(
+        () => calculateBillStatus(customer, deliveryData, extraMap, settledBills),
+        [customer, deliveryData, extraMap, settledBills]
+    )
+
+    if (billStatus.totalBill <= 0) return null
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+        >
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-3">
+                    <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                        <FiUser className="text-blue-500" />
+                        {customer.name}
+                    </h3>
+                    <p className="text-gray-600 flex items-center gap-2">
+                        <FiPhone className="text-gray-400" />
+                        {customer.phoneno}
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-gray-700">
+                        <FiDroplet className="text-blue-500" />
+                        <span className="font-medium">Quantity:</span>
+                        <span className="font-mono">{customer.quantity} Ltr.</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                        <FiDollarSign className="text-blue-500" />
+                        <span className="font-medium">Price:</span>
+                        <span className="font-mono">₹{customer.price.toLocaleString()}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-gray-700">
+                        <FiCalendar className="text-blue-500" />
+                        <span className="font-medium">Start Date:</span>
+                        <span>{formatDate(customer.startDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                        <FiCheck className="text-blue-500" />
+                        <span className="font-medium">Delivered:</span>
+                        <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {extraMap[customer.name] && (
+                        <>
+                            <div className="flex items-center gap-2 text-gray-700">
+                                <FiDroplet className="text-blue-500" />
+                                <span className="font-medium">Extra:</span>
+                                <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-700">
+                                <FiDollarSign className="text-blue-500" />
+                                <span className="font-medium">Extra Bill:</span>
+                                <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="pt-2 border-t border-gray-100 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">Total Bill:</span>
+                            <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
+                        </div>
+
+                        {billStatus.paid > 0 && (
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-700">Paid:</span>
+                                <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">Remaining:</span>
+                            <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                ₹{billStatus.remaining.toFixed(2)}
+                            </span>
+                        </div>
+
+                        {billStatus.hasNewCharges && (
+                            <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <FiPlus className="text-yellow-600" size={14} />
+                                <span className="text-xs text-yellow-700 font-medium">
+                                    New charges: ₹{billStatus.newCharges.toFixed(2)}
+                                </span>
+                            </div>
+                        )}
+
+                        {settledBills[customer.name] && (
+                            <div className="text-xs text-gray-500 text-right">
+                                Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
+                            </div>
+                        )}
+                    </div>
+
+                    {!billStatus.isSettled && (
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={() => onSettleClick(customer)}
+                                className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
+                            >
+                                <FiCreditCard size={14} />
+                                {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
+const StatsCard = ({ icon: Icon, title, value, color }) => (
+    <div className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100`}>
+        <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm text-gray-500">{title}</p>
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            </div>
+            <div className={`p-3 ${color.replace('text', 'bg')}50 rounded-full`}>
+                <Icon className={`${color}`} size={20} />
+            </div>
+        </div>
+    </div>
+)
+
+const BillDashboard = () => {
     const router = useRouter()
     const { data: session, status } = useSession()
 
@@ -90,34 +394,7 @@ export default function Bill() {
     const [settledBills, setSettledBills] = useState({})
     const [searchQuery, setSearchQuery] = useState('')
 
-    const getMonthOptions = () => {
-        const currentDate = new Date()
-        const currentMonth = currentDate.getMonth()
-        const currentYear = currentDate.getFullYear()
-        const options = []
-
-        for (let i = 0; i < 6; i++) {
-            const month = (currentMonth - i + 12) % 12
-            const year = month > currentMonth ? currentYear - 1 : currentYear
-            options.push({
-                value: month,
-                year: year,
-                label: new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })
-            })
-        }
-
-        return options
-    }
-
-    const monthOptions = getMonthOptions()
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-        })
-    }
+    const monthOptions = useMemo(getMonthOptions, [])
 
     const extraMap = useMemo(() => {
         const map = {}
@@ -135,197 +412,7 @@ export default function Bill() {
             customer.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }, [customers, searchQuery])
 
-    const fetchData = async () => {
-        try {
-            setLoading(true)
-            const res = await fetch('/api/allcustomer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ownerEmail: session?.user?.email }),
-            })
-
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-
-            const data = await res.json()
-            if (data.success) {
-                setApiData({
-                    customers: data.customers,
-                    undelivered: data.undelivered
-                })
-                setCustomers(data.customers)
-            } else {
-                throw new Error(data.message || 'Failed to fetch data')
-            }
-        } catch (error) {
-            console.error('Error fetching data:', error)
-            toast.error(error.message || 'Something went wrong while fetching data')
-        } finally {
-            setLoading(false)
-        }
-    }
-    
-
-    
-
-    const fetchSettledBills = async () => {
-        try {
-            const res = await fetch('/api/getsettledbills', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ownerEmail: session?.user?.email,
-                    month: selectedMonth,
-                    year: selectedYear,
-                }),
-            })
-
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-
-            const data = await res.json()
-            if (data.success) {
-                const billsMap = {}
-                data.bills.forEach(bill => {
-                    billsMap[bill.customerName] = bill
-                })
-                setSettledBills(billsMap)
-            } else {
-                throw new Error(data.message || 'Failed to fetch settled bills')
-            }
-        } catch (error) {
-            console.error('Error fetching settled bills:', error)
-            toast.error(error.message || 'Something went wrong while fetching settled bills')
-        }
-    }
-
-    const fetchExtras = async () => {
-        try {
-            const res = await fetch('/api/totalextra', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ownerEmail: session?.user?.email,
-                    month: selectedMonth,
-                    year: selectedYear,
-                }),
-            })
-
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-
-            const data = await res.json()
-            if (data.success) {
-                setExtras(data.extras)
-            } else {
-                throw new Error(data.message || 'Failed to fetch extras')
-            }
-        } catch (error) {
-            console.error('Error fetching extras:', error)
-            toast.error(error.message || 'Something went wrong while fetching extras')
-        }
-    }
-
-    useEffect(() => {
-        if (status === 'authenticated' && session?.user?.email) {
-            Promise.all([
-                fetchData(),
-                fetchExtras(),
-                fetchSettledBills()
-            ]).catch(console.error)
-        }
-    }, [status, selectedMonth, selectedYear, session?.user?.email])
-
-    useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/')
-        }
-    }, [status, router])
-    const handleRefresh = () => {
-        setRefreshing(true);
-        fetchData();
-        fetchExtras();
-        fetchSettledBills();
-    };
-    const totalCustomers = customers.length;
-     const pendingBills = useMemo(() => {
-            return customers.filter(customer => {
-                const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
-                return !billStatus.isSettled;
-            }).length;
-        }, [customers, deliveryData, extraMap, settledBills]);
-    const settledCount = totalCustomers - pendingBills;
-
-    useEffect(() => {
-        if (apiData.customers.length > 0) {
-            generateDeliveryData()
-        }
-    }, [apiData, selectedMonth, selectedYear])
-
-    const handleSettleBill = async () => {
-        if (!selectedCustomer || !paidAmount) return;
-
-        const billStatus = calculateBillStatus(selectedCustomer, deliveryData, extraMap, settledBills);
-
-        if (Number(paidAmount) > billStatus.remaining) {
-            toast.error('Paid amount cannot be more than remaining amount');
-            return;
-        }
-
-        if (Number(paidAmount) <= 0) {
-            toast.error('Paid amount must be greater than 0');
-            return;
-        }
-
-        try {
-            setSettleLoading(true);
-
-            const newPaidAmount = billStatus.paid + Number(paidAmount);
-            const newRemainingAmount = billStatus.remaining - Number(paidAmount);
-
-            const res = await fetch('/api/settlebill', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customerName: selectedCustomer.name,
-                    ownerEmail: session.user.email,
-                    month: selectedMonth,
-                    year: selectedYear,
-                    total: billStatus.totalBill,
-                    paid: newPaidAmount,
-                    remaining: newRemainingAmount
-                })
-            });
-
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-
-            const data = await res.json();
-            if (data.success) {
-                toast.success('Payment recorded successfully');
-                setIsSettleOpen(false);
-                setSelectedCustomer(null);
-                setPaidAmount('');
-                fetchSettledBills();
-            } else {
-                throw new Error(data.message || 'Failed to record payment');
-            }
-        } catch (error) {
-            console.error('Error recording payment:', error);
-            toast.error(error.message || 'Something went wrong while recording payment');
-        } finally {
-            setSettleLoading(false);
-        }
-    }
-
-    const fetchCustomers = async () => {
-        try {
-            setRefreshing(true)
-            await fetchData()
-        } catch (error) {
-            console.error('Error refreshing customers:', error)
-        } finally {
-            setRefreshing(false)
-        }
-    }
-
-    const generateDeliveryData = () => {
+    const generateDeliveryData = useCallback(() => {
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate()
         const data = {}
         const today = new Date()
@@ -382,44 +469,220 @@ export default function Bill() {
         })
 
         setDeliveryData(data)
-    }
+    }, [apiData, selectedMonth, selectedYear])
 
-    const handleMonthChange = (e) => {
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true)
+            const res = await fetch('/api/allcustomer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ownerEmail: session?.user?.email }),
+            })
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+
+            const data = await res.json()
+            if (data.success) {
+                setApiData({
+                    customers: data.customers,
+                    undelivered: data.undelivered
+                })
+                setCustomers(data.customers)
+            } else {
+                throw new Error(data.message || 'Failed to fetch data')
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error)
+            toast.error(error.message || 'Something went wrong while fetching data')
+        } finally {
+            setLoading(false)
+        }
+    }, [session?.user?.email])
+
+    const fetchSettledBills = useCallback(async () => {
+        try {
+            const res = await fetch('/api/getsettledbills', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ownerEmail: session?.user?.email,
+                    month: selectedMonth,
+                    year: selectedYear,
+                }),
+            })
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+
+            const data = await res.json()
+            if (data.success) {
+                const billsMap = {}
+                data.bills.forEach(bill => {
+                    billsMap[bill.customerName] = bill
+                })
+                setSettledBills(billsMap)
+            } else {
+                throw new Error(data.message || 'Failed to fetch settled bills')
+            }
+        } catch (error) {
+            console.error('Error fetching settled bills:', error)
+            toast.error(error.message || 'Something went wrong while fetching settled bills')
+        }
+    }, [session?.user?.email, selectedMonth, selectedYear])
+
+    const fetchExtras = useCallback(async () => {
+        try {
+            const res = await fetch('/api/totalextra', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ownerEmail: session?.user?.email,
+                    month: selectedMonth,
+                    year: selectedYear,
+                }),
+            })
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+
+            const data = await res.json()
+            if (data.success) {
+                setExtras(data.extras)
+            } else {
+                throw new Error(data.message || 'Failed to fetch extras')
+            }
+        } catch (error) {
+            console.error('Error fetching extras:', error)
+            toast.error(error.message || 'Something went wrong while fetching extras')
+        }
+    }, [session?.user?.email, selectedMonth, selectedYear])
+
+    const handleSettleBill = useCallback(async (amount) => {
+        if (!selectedCustomer || !amount) return;
+
+        const billStatus = calculateBillStatus(selectedCustomer, deliveryData, extraMap, settledBills);
+
+        if (Number(amount) > billStatus.remaining) {
+            toast.error('Paid amount cannot be more than remaining amount');
+            return;
+        }
+
+        if (Number(amount) <= 0) {
+            toast.error('Paid amount must be greater than 0');
+            return;
+        }
+
+        try {
+            setSettleLoading(true);
+
+            const newPaidAmount = billStatus.paid + Number(amount);
+            const newRemainingAmount = billStatus.remaining - Number(amount);
+
+            const res = await fetch('/api/settlebill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customerName: selectedCustomer.name,
+                    ownerEmail: session.user.email,
+                    month: selectedMonth,
+                    year: selectedYear,
+                    total: billStatus.totalBill,
+                    paid: newPaidAmount,
+                    remaining: newRemainingAmount
+                })
+            });
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Payment recorded successfully');
+                setIsSettleOpen(false);
+                setSelectedCustomer(null);
+                setPaidAmount('');
+                fetchSettledBills();
+            } else {
+                throw new Error(data.message || 'Failed to record payment');
+            }
+        } catch (error) {
+            console.error('Error recording payment:', error);
+            toast.error(error.message || 'Something went wrong while recording payment');
+        } finally {
+            setSettleLoading(false);
+        }
+    }, [selectedCustomer, deliveryData, extraMap, settledBills, session?.user?.email, selectedMonth, selectedYear, fetchSettledBills])
+
+    const handleRefresh = useCallback(() => {
+        setRefreshing(true);
+        Promise.all([
+            fetchData(),
+            fetchExtras(),
+            fetchSettledBills()
+        ]).finally(() => setRefreshing(false));
+    }, [fetchData, fetchExtras, fetchSettledBills])
+
+    const handleMonthChange = useCallback((e) => {
         const selectedOption = monthOptions.find(opt => opt.value.toString() === e.target.value)
         setSelectedMonth(selectedOption.value)
         setSelectedYear(selectedOption.year)
-    }
+    }, [monthOptions])
 
-    const calculateTotalSales = () => {
+    const calculateTotalSales = useCallback(() => {
         return customers.reduce((total, customer) => {
             const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
             return total + billStatus.totalBill;
         }, 0);
-    };
-    const totalSales = calculateTotalSales();
+    }, [customers, deliveryData, extraMap, settledBills]);
 
-    const summaryStats = useMemo(() => {
-        const totalCustomers = customers.length;
-        const pendingBills = customers.filter(customer => {
+    const totalSales = useMemo(calculateTotalSales, [calculateTotalSales])
+    const totalCustomers = customers.length;
+
+    const pendingBills = useMemo(() => {
+        return customers.filter(customer => {
             const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
             return !billStatus.isSettled;
         }).length;
-
-        const totalSales = calculateTotalSales(customers, deliveryData, extraMap, settledBills);
-
-        return {
-            totalCustomers,
-            totalPendingBills: pendingBills,
-            totalSettledBills: totalCustomers - pendingBills,
-            totalSales
-        };
     }, [customers, deliveryData, extraMap, settledBills]);
+
+    const settledCount = totalCustomers - pendingBills;
+    const customersWithBill = useMemo(() => filteredCustomers.filter((customer) => {
+        const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
+        return billStatus.totalBill > 0;
+    }), [filteredCustomers, deliveryData, extraMap, settledBills]);
+
+    const countOfCustomersWithBill = customersWithBill.length;
+
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user?.email) {
+            Promise.all([
+                fetchData(),
+                fetchExtras(),
+                fetchSettledBills()
+            ]).catch(console.error)
+        }
+    }, [status, session?.user?.email, fetchData, fetchExtras, fetchSettledBills])
+
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            router.push('/')
+        }
+    }, [status, router])
+
+    useEffect(() => {
+        if (apiData.customers.length > 0) {
+            generateDeliveryData()
+        }
+    }, [apiData, selectedMonth, selectedYear, generateDeliveryData])
+
+    const handleSettleClick = useCallback((customer) => {
+        setSelectedCustomer(customer)
+        setIsSettleOpen(true)
+        setPaidAmount('')
+    }, [])
 
     if (status === 'loading') {
         return (
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
-
                 <div className="p-6 max-w-6xl mx-auto">
                     <Skeleton height={40} width={240} className="mb-8 rounded-lg" />
                     <div className="grid gap-6">
@@ -437,7 +700,6 @@ export default function Bill() {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-
 
             <main className="p-4 md:p-8 max-w-7xl mx-auto">
                 <div>
@@ -457,7 +719,6 @@ export default function Bill() {
                                         </option>
                                     ))}
                                 </select>
-                                {/* Chevron icon not added here to keep minimal */}
                             </div>
 
                             <button
@@ -472,67 +733,36 @@ export default function Bill() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Total Customers</p>
-                                    <p className="text-2xl font-bold text-gray-800">{totalCustomers}</p>
-                                </div>
-                                <div className="p-3 bg-blue-50 rounded-full">
-                                    <FiUser className="text-blue-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Pending Bills</p>
-                                    <p className="text-2xl font-bold text-yellow-600">{pendingBills}</p>
-                                </div>
-                                <div className="p-3 bg-yellow-50 rounded-full">
-                                    <FiAlertCircle className="text-yellow-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Current Month</p>
-                                    <p className="text-xl font-bold text-gray-800">
-                                        {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                    </p>
-                                </div>
-                                <div className="p-3 bg-green-50 rounded-full">
-                                    <FiCalendar className="text-green-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Settled Bills</p>
-                                    <p className="text-2xl font-bold text-green-600">{settledCount}</p>
-                                </div>
-                                <div className="p-3 bg-green-50 rounded-full">
-                                    <FiCheck className="text-green-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Total Sales</p>
-                                    <p className="text-2xl font-bold text-purple-600">₹{totalSales.toLocaleString('en-IN')}</p>
-                                </div>
-                                <div className="p-3 bg-purple-50 rounded-full">
-                                    <FiDollarSign className="text-purple-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
+                        <StatsCard
+                            icon={FiUser}
+                            title="Total Customers"
+                            value={totalCustomers}
+                            color="text-gray-800"
+                        />
+                        <StatsCard
+                            icon={FiAlertCircle}
+                            title="Pending Bills"
+                            value={pendingBills}
+                            color="text-yellow-600"
+                        />
+                        <StatsCard
+                            icon={FiCalendar}
+                            title="Current Month"
+                            value={new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                            color="text-gray-800"
+                        />
+                        <StatsCard
+                            icon={FiCheck}
+                            title="Settled Bills"
+                            value={settledCount}
+                            color="text-green-600"
+                        />
+                        <StatsCard
+                            icon={FiDollarSign}
+                            title="Total Sales"
+                            value={`₹${totalSales.toLocaleString('en-IN')}`}
+                            color="text-purple-600"
+                        />
                     </div>
                 </div>
 
@@ -565,260 +795,56 @@ export default function Bill() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid gap-4">
-                        {filteredCustomers.map((customer) => {
-                            const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
-
-                            return (
-                                <motion.div
-                                    key={customer._id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
-                                >
-                                    {billStatus.totalBill > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                            <div className="space-y-3">
-                                                <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                                                    <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                                    <FiUser className="text-blue-500" />
-                                                    {customer.name}
-                                                </h3>
-                                                <p className="text-gray-600 flex items-center gap-2">
-                                                    <FiPhone className="text-gray-400" />
-                                                    {customer.phoneno}
-                                                </p>
+                    <>
+                        {countOfCustomersWithBill > 0 && (
+                            <div className="grid gap-4">
+                                {customersWithBill.map((customer) => (
+                                    <CustomerBillCard
+                                        key={customer._id}
+                                        customer={customer}
+                                        deliveryData={deliveryData}
+                                        extraMap={extraMap}
+                                        settledBills={settledBills}
+                                        onSettleClick={handleSettleClick}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        {countOfCustomersWithBill === 0 && (<>
+                                    <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+                                        <div className="max-w-md mx-auto">
+                                            <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                                                <FiUser className="text-gray-400 text-3xl" />
                                             </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2 text-gray-700">
-                                                    <FiDroplet className="text-blue-500" />
-                                                    <span className="font-medium">Quantity:</span>
-                                                    <span className="font-mono">{customer.quantity} Ltr.</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-gray-700">
-                                                    <FiDollarSign className="text-blue-500" />
-                                                    <span className="font-medium">Price:</span>
-                                                    <span className="font-mono">₹{customer.price.toLocaleString()}</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2 text-gray-700">
-                                                    <FiCalendar className="text-blue-500" />
-                                                    <span className="font-medium">Start Date:</span>
-                                                    <span>{formatDate(customer.startDate)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-gray-700">
-                                                    <FiCheck className="text-blue-500" />
-                                                    <span className="font-medium">Delivered:</span>
-                                                    <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                {extraMap[customer.name] && (
-                                                    <>
-                                                        <div className="flex items-center gap-2 text-gray-700">
-                                                            <FiDroplet className="text-blue-500" />
-                                                            <span className="font-medium">Extra:</span>
-                                                            <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-gray-700">
-                                                            <FiDollarSign className="text-blue-500" />
-                                                            <span className="font-medium">Extra Bill:</span>
-                                                            <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
-                                                        </div>
-                                                    </>
-                                                )}
-
-                                                <div className="pt-2 border-t border-gray-100 space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-700">Total Bill:</span>
-                                                        <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
-                                                    </div>
-
-                                                    {billStatus.paid > 0 && (
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-medium text-gray-700">Paid:</span>
-                                                            <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-700">Remaining:</span>
-                                                        <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                                                            ₹{billStatus.remaining.toFixed(2)}
-                                                        </span>
-                                                    </div>
-
-                                                    {billStatus.hasNewCharges && (
-                                                        <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                                            <FiPlus className="text-yellow-600" size={14} />
-                                                            <span className="text-xs text-yellow-700 font-medium">
-                                                                New charges: ₹{billStatus.newCharges.toFixed(2)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {settledBills[customer.name] && (
-                                                        <div className="text-xs text-gray-500 text-right">
-                                                            Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {billStatus.totalBill > 0 && !billStatus.isSettled && (
-                                                    <div className="flex justify-end pt-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedCustomer(customer);
-                                                                setIsSettleOpen(true);
-                                                                setPaidAmount('');
-                                                            }}
-                                                            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
-                                                        >
-                                                            <FiCreditCard size={14} />
-                                                            {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <h3 className="text-lg font-medium text-gray-800 mb-2">
+                                                No Bills found
+                                            </h3>
+                                           
+                                            <button
+                                                onClick={handleRefresh}
+                                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                                            >
+                                                Refresh List
+                                            </button>
                                         </div>
-                                    ) : (
-                                        <div className="text-center text-gray-500">
-                                            No bill amount to display
-                                        </div>
-                                    )}
-                              </motion.div>
-                            )
-                        })}
-                    </div>
+                                    </div>
+                        </>)}
+                    </>
                 )}
             </main>
 
-            <AnimatePresence>
-                {isSettleOpen && selectedCustomer && (() => {
-                    const billStatus = calculateBillStatus(selectedCustomer, deliveryData, extraMap, settledBills);
-
-                    return (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                        >
-                            <motion.div
-                                initial={{ scale: 0.95, y: 20 }}
-                                animate={{ scale: 1, y: 0 }}
-                                exit={{ scale: 0.95, y: 20 }}
-                                className="bg-white rounded-xl p-6 w-full max-w-md"
-                            >
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-semibold text-gray-800">Settle Bill</h3>
-                                    <button
-                                        onClick={() => setIsSettleOpen(false)}
-                                        className="text-gray-500 hover:text-gray-700 transition-colors"
-                                    >
-                                        <FiX size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <p className="text-gray-600">Customer: <span className="font-medium">{selectedCustomer.name}</span></p>
-                                        <p className="text-gray-600">Month: <span className="font-medium">
-                                            {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                        </span></p>
-                                    </div>
-
-                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                        <div className="flex justify-between items-center">
-                                            <p className="text-gray-800 font-medium">Total Bill:</p>
-                                            <p className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</p>
-                                        </div>
-                                        {billStatus.paid > 0 && (
-                                            <div className="mt-2 pt-2 border-t border-blue-100">
-                                                <div className="flex justify-between items-center">
-                                                    <p className="text-gray-700 text-sm">Already Paid:</p>
-                                                    <p className="font-mono text-sm text-green-600">₹{billStatus.paid.toFixed(2)}</p>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <p className="text-gray-700 text-sm">Remaining:</p>
-                                                    <p className="font-mono text-sm text-yellow-600">₹{billStatus.remaining.toFixed(2)}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="paidAmount" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Amount Paid
-                                        </label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                                            <input
-                                                type="number"
-                                                id="paidAmount"
-                                                value={paidAmount}
-                                                onChange={(e) => {
-                                                    const value = Math.min(Number(e.target.value), billStatus.remaining);
-                                                    setPaidAmount(value);
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        handleSettleBill();
-                                                    }
-                                                }}
-                                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder={`Enter amount (max ₹${billStatus.remaining.toFixed(2)})`}
-                                                max={billStatus.remaining}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {paidAmount && (
-                                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-700">New Payment:</span>
-                                                <span className="font-mono font-medium">₹{Number(paidAmount).toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-gray-700">Remaining After Payment:</span>
-                                                <span className="font-mono font-medium">
-                                                    ₹{(billStatus.remaining - Number(paidAmount)).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-end gap-3 pt-4">
-                                        <button
-                                            onClick={() => setIsSettleOpen(false)}
-                                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleSettleBill}
-                                            disabled={settleLoading || !paidAmount}
-                                            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                                        >
-                                            {settleLoading ? (
-                                                <span className="flex items-center gap-2">
-                                                    <FiRefreshCw className="animate-spin" />
-                                                    Processing...
-                                                </span>
-                                            ) : 'Settle Bill'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )
-                })()}
-            </AnimatePresence>
+            <SettlementModal
+                isOpen={isSettleOpen}
+                onClose={() => setIsSettleOpen(false)}
+                customer={selectedCustomer}
+                month={selectedMonth}
+                year={selectedYear}
+                billStatus={selectedCustomer ? calculateBillStatus(selectedCustomer, deliveryData, extraMap, settledBills) : null}
+                onSettle={handleSettleBill}
+                isLoading={settleLoading}
+            />
         </div>
     )
 }
+
+export default BillDashboard
