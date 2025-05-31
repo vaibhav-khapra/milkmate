@@ -577,115 +577,121 @@ export default function Bill() {
                                     transition={{ duration: 0.2 }}
                                     className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                        <div className="space-y-3">
-                                            <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                                <FiUser className="text-blue-500" />
-                                                {customer.name}
-                                            </h3>
-                                            <p className="text-gray-600 flex items-center gap-2">
-                                                <FiPhone className="text-gray-400" />
-                                                {customer.phoneno}
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiDroplet className="text-blue-500" />
-                                                <span className="font-medium">Quantity:</span>
-                                                <span className="font-mono">{customer.quantity} Ltr.</span>
+                                    {billStatus.totalBill > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                            <div className="space-y-3">
+                                                <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                                    <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                                                    <FiUser className="text-blue-500" />
+                                                    {customer.name}
+                                                </h3>
+                                                <p className="text-gray-600 flex items-center gap-2">
+                                                    <FiPhone className="text-gray-400" />
+                                                    {customer.phoneno}
+                                                </p>
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiDollarSign className="text-blue-500" />
-                                                <span className="font-medium">Price:</span>
-                                                <span className="font-mono">₹{customer.price.toLocaleString()}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiCalendar className="text-blue-500" />
-                                                <span className="font-medium">Start Date:</span>
-                                                <span>{formatDate(customer.startDate)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiCheck className="text-blue-500" />
-                                                <span className="font-medium">Delivered:</span>
-                                                <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            {extraMap[customer.name] && (
-                                                <>
-                                                    <div className="flex items-center gap-2 text-gray-700">
-                                                        <FiDroplet className="text-blue-500" />
-                                                        <span className="font-medium">Extra:</span>
-                                                        <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-gray-700">
-                                                        <FiDollarSign className="text-blue-500" />
-                                                        <span className="font-medium">Extra Bill:</span>
-                                                        <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            <div className="pt-2 border-t border-gray-100 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-medium text-gray-700">Total Bill:</span>
-                                                    <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiDroplet className="text-blue-500" />
+                                                    <span className="font-medium">Quantity:</span>
+                                                    <span className="font-mono">{customer.quantity} Ltr.</span>
                                                 </div>
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiDollarSign className="text-blue-500" />
+                                                    <span className="font-medium">Price:</span>
+                                                    <span className="font-mono">₹{customer.price.toLocaleString()}</span>
+                                                </div>
+                                            </div>
 
-                                                {billStatus.paid > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-700">Paid:</span>
-                                                        <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
-                                                    </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiCalendar className="text-blue-500" />
+                                                    <span className="font-medium">Start Date:</span>
+                                                    <span>{formatDate(customer.startDate)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiCheck className="text-blue-500" />
+                                                    <span className="font-medium">Delivered:</span>
+                                                    <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {extraMap[customer.name] && (
+                                                    <>
+                                                        <div className="flex items-center gap-2 text-gray-700">
+                                                            <FiDroplet className="text-blue-500" />
+                                                            <span className="font-medium">Extra:</span>
+                                                            <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-700">
+                                                            <FiDollarSign className="text-blue-500" />
+                                                            <span className="font-medium">Extra Bill:</span>
+                                                            <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
+                                                        </div>
+                                                    </>
                                                 )}
 
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-medium text-gray-700">Remaining:</span>
-                                                    <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                                                        ₹{billStatus.remaining.toFixed(2)}
-                                                    </span>
-                                                </div>
+                                                <div className="pt-2 border-t border-gray-100 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-medium text-gray-700">Total Bill:</span>
+                                                        <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
+                                                    </div>
 
-                                                {billStatus.hasNewCharges && (
-                                                    <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                                        <FiPlus className="text-yellow-600" size={14} />
-                                                        <span className="text-xs text-yellow-700 font-medium">
-                                                            New charges: ₹{billStatus.newCharges.toFixed(2)}
+                                                    {billStatus.paid > 0 && (
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-medium text-gray-700">Paid:</span>
+                                                            <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-medium text-gray-700">Remaining:</span>
+                                                        <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                                            ₹{billStatus.remaining.toFixed(2)}
                                                         </span>
                                                     </div>
-                                                )}
 
-                                                {settledBills[customer.name] && (
-                                                    <div className="text-xs text-gray-500 text-right">
-                                                        Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
+                                                    {billStatus.hasNewCharges && (
+                                                        <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                            <FiPlus className="text-yellow-600" size={14} />
+                                                            <span className="text-xs text-yellow-700 font-medium">
+                                                                New charges: ₹{billStatus.newCharges.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {settledBills[customer.name] && (
+                                                        <div className="text-xs text-gray-500 text-right">
+                                                            Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {billStatus.totalBill > 0 && !billStatus.isSettled && (
+                                                    <div className="flex justify-end pt-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedCustomer(customer);
+                                                                setIsSettleOpen(true);
+                                                                setPaidAmount('');
+                                                            }}
+                                                            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
+                                                        >
+                                                            <FiCreditCard size={14} />
+                                                            {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>
-
-                                            {billStatus.totalBill > 0 && !billStatus.isSettled && (
-                                                <div className="flex justify-end pt-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedCustomer(customer)
-                                                            setIsSettleOpen(true)
-                                                            setPaidAmount('')
-                                                        }}
-                                                        className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
-                                                    >
-                                                        <FiCreditCard size={14} />
-                                                        {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
-                                                    </button>
-                                                </div>
-                                            )}
                                         </div>
-                                    </div>
-                                </motion.div>
+                                    ) : (
+                                        <div className="text-center text-gray-500">
+                                            No bill amount to display
+                                        </div>
+                                    )}
+                              </motion.div>
                             )
                         })}
                     </div>
