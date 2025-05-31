@@ -7,11 +7,11 @@ export async function PUT(req) {
         await connectToDatabase()
         const body = await req.json()
 
-        const { _id, name, phoneno, quantity, price } = body
+        const { _id, name, phoneno, quantity, price, isDelivered } = body
 
         const updated = await Customer.findByIdAndUpdate(
             _id,
-            { name, phoneno, quantity, price },
+            { name, phoneno, quantity, price, isDelivered },
             { new: true }
         )
 

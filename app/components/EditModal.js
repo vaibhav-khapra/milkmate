@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiX, FiUser, FiPhone, FiDroplet, FiDollarSign } from 'react-icons/fi'
+import { FiX, FiUser, FiPhone, FiDroplet, FiDollarSign, FiStopCircle, FiPlayCircle } from 'react-icons/fi'
 
 export default function EditModal({ customer, onClose, onSave }) {
     const [formData, setFormData] = useState({ ...customer })
@@ -41,6 +41,50 @@ export default function EditModal({ customer, onClose, onSave }) {
                 position: 'top-center'
             })
             console.error('Update error:', err)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const toggleDeliveryStatus = async () => {
+        const newStatus = !formData.isDelivered
+        const action = newStatus ? 'start' : 'stop'
+
+        if (!window.confirm(`Are you sure you want to ${action} delivery for this customer?`)) {
+            return
+        }
+
+        setIsSubmitting(true)
+        try {
+            const res = await fetch('/api/updateCustomer', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    isDelivered: newStatus
+                }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                toast.success(`Delivery ${action}ed successfully!`, {
+                    position: 'top-center',
+                    style: {
+                        background: '#10B981',
+                        color: '#fff',
+                    }
+                })
+                setFormData(prev => ({ ...prev, isDelivered: newStatus }))
+                onSave()
+            } else {
+                toast.error(data.message || `Failed to ${action} delivery`, {
+                    position: 'top-center'
+                })
+            }
+        } catch (err) {
+            toast.error(`Error ${action}ing delivery. Please try again.`, {
+                position: 'top-center'
+            })
+            console.error('Delivery status error:', err)
         } finally {
             setIsSubmitting(false)
         }
@@ -147,21 +191,45 @@ export default function EditModal({ customer, onClose, onSave }) {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-between gap-3 pt-4">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
+                            onClick={toggleDeliveryStatus}
                             disabled={isSubmitting}
-                            className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+                            className={`px-5 py-2.5 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 ${formData.isDelivered
+                                    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                                    : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                                }`}
                         >
-                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                            {formData.isDelivered ? (
+                                <>
+                                    <FiStopCircle />
+                                    Stop Delivery
+                                </>
+                            ) : (
+                                <>
+                                    <FiPlayCircle />
+                                    Start Delivery
+                                </>
+                            )}
                         </button>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
