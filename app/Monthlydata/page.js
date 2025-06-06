@@ -15,7 +15,6 @@ const Monthlydata = () => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [deliveryData, setDeliveryData] = useState({});
     const [apiData, setApiData] = useState({ customers: [], undelivered: [] });
-    const router = useRouter();
 
     const getMonthOptions = () => {
         const currentDate = new Date();
@@ -37,20 +36,13 @@ const Monthlydata = () => {
     };
 
     const monthOptions = getMonthOptions();
-
-    const hasDeliveredDays = (customerId) => {
-        if (!deliveryData[customerId]) return false;
-        return Object.values(deliveryData[customerId].days).some(
-            status => status === 'delivered'
-        );
-    };
+    const router = useRouter()
 
     useEffect(() => {
         if (status === 'authenticated') {
             fetchData();
         }
     }, [status]);
-
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push("/")
@@ -114,8 +106,7 @@ const Monthlydata = () => {
 
             data[customer._id] = {
                 name: customer.name,
-                days: {},
-                totalDelivered: 0
+                days: {}
             };
 
             for (let day = 1; day <= daysInMonth; day++) {
@@ -138,9 +129,6 @@ const Monthlydata = () => {
 
                 const isUndelivered = undeliveredMap[customer.name]?.has(currentDateString);
                 data[customer._id].days[day] = isUndelivered ? 'undelivered' : 'delivered';
-                if (data[customer._id].days[day] === 'delivered') {
-                    data[customer._id].totalDelivered++;
-                }
             }
         });
 
@@ -170,9 +158,6 @@ const Monthlydata = () => {
 
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const customersWithDeliveries = apiData.customers.filter(customer =>
-        deliveryData[customer._id]?.totalDelivered > 0
-    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -203,109 +188,78 @@ const Monthlydata = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
-                    {customersWithDeliveries.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[250px]">
-                                            Customer
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[250px]">
+                                        Customer
+                                    </th>
+                                    {daysArray.map(day => (
+                                        <th key={day} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700">
+                                                {day}
+                                            </span>
                                         </th>
-                                        {daysArray.map(day => (
-                                            <th key={day} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700">
-                                                    {day}
-                                                </span>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {customersWithDeliveries.map(customer => (
-                                        <tr key={customer._id} className="hover:bg-gray-50/50 transition-colors duration-150">
-                                            <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-blue-600 font-medium shadow-inner">
-                                                        {customer.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-gray-900">{customer.name}</div>
-                                                        <div className="text-xs text-gray-500">Since {new Date(customer.startDate).toLocaleDateString("en-IN")}</div>
-                                                    </div>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y  divide-gray-200">
+                                {apiData.customers.map(customer => (
+                                    <tr key={customer._id} className="hover:bg-gray-50/50 transition-colors duration-150">
+                                        <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-blue-600 font-medium shadow-inner">
+                                                    {customer.name.charAt(0).toUpperCase()}
                                                 </div>
-                                            </td>
-                                            {daysArray.map(day => {
-                                                const status = deliveryData[customer._id]?.days[day] || 'not-started';
+                                                <div>
+                                                    <div className="font-medium text-gray-900">{customer.name}</div>
+                                                    <div className="text-xs text-gray-500">Since {new Date(customer.startDate).toLocaleDateString("en-IN")}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {daysArray.map(day => {
+                                            const status = deliveryData[customer._id]?.days[day] || 'not-started';
 
-                                                if (status === 'not-started' || status === 'future') {
-                                                    return (
-                                                        <td key={`${customer._id}-${day}`} className="px-1 py-4 text-center">
-                                                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${status === 'future' ? 'text-gray-200' : 'text-gray-300'}`}>
-                                                                -
-                                                            </span>
-                                                        </td>
-                                                    );
-                                                }
-
+                                            if (status === 'not-started' || status === 'future') {
                                                 return (
                                                     <td key={`${customer._id}-${day}`} className="px-1 py-4 text-center">
-                                                        <div className="flex items-center justify-center">
-                                                            <DeliveryStatusComponent
-                                                                status={status}
-                                                                customer={{
-                                                                    name: customer.name,
-                                                                    ownerEmail: session?.user?.email,
-                                                                    dateNotDelivered: new Date(selectedYear, selectedMonth, day).toISOString()
-                                                                }}
-                                                                onChangeStatus={(newStatus) => {
-                                                                    setDeliveryData(prev => {
-                                                                        const updated = { ...prev };
-                                                                        if (updated[customer._id]) {
-                                                                            updated[customer._id].days[day] = newStatus;
-                                                                            // Update total delivered count
-                                                                            if (newStatus === 'delivered') {
-                                                                                updated[customer._id].totalDelivered++;
-                                                                            } else if (status === 'delivered' && newStatus !== 'delivered') {
-                                                                                updated[customer._id].totalDelivered--;
-                                                                            }
-                                                                        }
-                                                                        return updated;
-                                                                    });
-                                                                }}
-                                                            />
-                                                        </div>
+                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${status === 'future' ? 'text-gray-200' : 'text-gray-300'}`}>
+                                                            -
+                                                        </span>
                                                     </td>
                                                 );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="p-8 text-center">
-                            <div className="max-w-md mx-auto">
-                                <svg
-                                    className="mx-auto h-12 w-12 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={1}
-                                        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                </svg>
-                                <h3 className="mt-2 text-lg font-medium text-gray-900">No deliveries found</h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    There are no customers with deliveries for {monthOptions.find(m => m.value === selectedMonth)?.label}.
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                                            }
+
+                                            return (
+                                                <td key={`${customer._id}-${day}`} className="px-1 py-4 text-center">
+                                                    <div className="flex items-center justify-center">
+                                                        <DeliveryStatusComponent
+                                                            status={status}
+                                                            customer={{
+                                                                name: customer.name,
+                                                                ownerEmail: session?.user?.email,
+                                                                dateNotDelivered: new Date(selectedYear, selectedMonth, day).toISOString()
+                                                            }}
+                                                            onChangeStatus={(newStatus) => {
+                                                                setDeliveryData(prev => {
+                                                                    const updated = { ...prev };
+                                                                    if (updated[customer._id]) {
+                                                                        updated[customer._id].days[day] = newStatus;
+                                                                    }
+                                                                    return updated;
+                                                                });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm">

@@ -1,31 +1,40 @@
-// /app/api/cron/undelivered/route.js
-import { NextResponse } from "next/server";
-import connectToDatabase from "@/app/conn/db";
-import PausedCustomer from "@/models/PausedCustomer";
-import Undelivered from "@/models/Undelivered";
+import { NextResponse } from 'next/server';
+import connectToDatabase from '@/app/conn/db';
+import Customer from '@/models/Customer';
+import Undelivered from '@/models/Undelivered';
 
 export async function GET() {
-    await connectToDatabase();
+    try {
+        await connectToDatabase();
 
-    const today = new Date();
-    const dateOnly = new Date(today.toISOString().split("T")[0]);
-    const paused = await PausedCustomer.find();
+        const customers = await Customer.find({});
+        const today = new Date().toISOString().split('T')[0];
 
-    for (const c of paused) {
-        const exists = await Undelivered.findOne({
-            name: c.name,
-            ownerEmail: c.ownerEmail,
-            dateNotDelivered: dateOnly,
-        });
+        let savedCount = 0;
 
-        if (!exists) {
-            await Undelivered.create({
-                name: c.name,
-                ownerEmail: c.ownerEmail,
-                dateNotDelivered: dateOnly,
-            });
+        for (const customer of customers) {
+            if (!customer.isDelivered) {
+                const exists = await Undelivered.findOne({
+                    name: customer.name,
+                    ownerEmail: customer.ownerEmail,
+                    dateNotDelivered: today,
+                });
+
+                if (!exists) {
+                    const newUndelivered = new Undelivered({
+                        name: customer.name,
+                        ownerEmail: customer.ownerEmail,
+                        dateNotDelivered: today,
+                    });
+                    await newUndelivered.save();
+                    savedCount++;
+                }
+            }
         }
-    }
 
-    return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, savedCount });
+    } catch (error) {
+        console.error('Cron error:', error);
+        return NextResponse.json({ success: false, message: 'Cron job failed' }, { status: 500 });
+    }
 }

@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiX, FiUser, FiPhone, FiDroplet, FiDollarSign, FiStopCircle, FiPlayCircle } from 'react-icons/fi'
+import { FiX, FiUser, FiPhone, FiDroplet, FiDollarSign, FiTruck, FiStopCircle } from 'react-icons/fi'
 
 export default function EditModal({ customer, onClose, onSave }) {
     const [formData, setFormData] = useState({ ...customer })
@@ -10,6 +10,72 @@ export default function EditModal({ customer, onClose, onSave }) {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
+
+    const toggleDelivery = async () => {
+        setIsSubmitting(true);
+        try {
+            // 1. Update Customer's isDelivered status
+            const res = await fetch('/api/updateCustomer', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    _id: customer._id,
+                    isDelivered: !formData.isDelivered
+                }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                // 2. Call /api/saveUndelivered with the current customer data
+                const undeliveredRes = await fetch('/api/saveUndelivered', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customersToSave: [
+                            {
+                                name: formData.name,
+                                ownerEmail: customer.ownerEmail,  // make sure this is available in `customer`
+                                dateNotDelivered: new Date().toISOString().split('T')[0], // or use a better formatted date if required
+                                isDelivered: !formData.isDelivered
+                            }
+                        ]
+                    }),
+                });
+
+                const undeliveredData = await undeliveredRes.json();
+                if (!undeliveredData.success) {
+                    toast.error('Delivery status updated, but failed to sync undelivered list.', {
+                        position: 'top-center'
+                    });
+                }
+
+                // 3. Show success toast
+                toast.success(`Delivery ${formData.isDelivered ? 'stopped' : 'started'} successfully!`, {
+                    position: 'top-center',
+                    style: {
+                        background: '#10B981',
+                        color: '#fff',
+                    }
+                });
+
+                // 4. Update UI state
+                setFormData(prev => ({ ...prev, isDelivered: !prev.isDelivered }));
+                onSave();
+            } else {
+                toast.error(data.message || 'Failed to update delivery status', {
+                    position: 'top-center'
+                });
+            }
+        } catch (err) {
+            toast.error('Error updating delivery status. Please try again.', {
+                position: 'top-center'
+            });
+            console.error('Delivery toggle error:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -41,50 +107,6 @@ export default function EditModal({ customer, onClose, onSave }) {
                 position: 'top-center'
             })
             console.error('Update error:', err)
-        } finally {
-            setIsSubmitting(false)
-        }
-    }
-
-    const toggleDeliveryStatus = async () => {
-        const newStatus = !formData.isDelivered
-        const action = newStatus ? 'start' : 'stop'
-
-        if (!window.confirm(`Are you sure you want to ${action} delivery for this customer?`)) {
-            return
-        }
-
-        setIsSubmitting(true)
-        try {
-            const res = await fetch('/api/updateCustomer', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    isDelivered: newStatus
-                }),
-            })
-            const data = await res.json()
-            if (data.success) {
-                toast.success(`Delivery ${action}ed successfully!`, {
-                    position: 'top-center',
-                    style: {
-                        background: '#10B981',
-                        color: '#fff',
-                    }
-                })
-                setFormData(prev => ({ ...prev, isDelivered: newStatus }))
-                onSave()
-            } else {
-                toast.error(data.message || `Failed to ${action} delivery`, {
-                    position: 'top-center'
-                })
-            }
-        } catch (err) {
-            toast.error(`Error ${action}ing delivery. Please try again.`, {
-                position: 'top-center'
-            })
-            console.error('Delivery status error:', err)
         } finally {
             setIsSubmitting(false)
         }
@@ -191,25 +213,23 @@ export default function EditModal({ customer, onClose, onSave }) {
                         </div>
                     </div>
 
-                    <div className="flex justify-between gap-3 pt-4">
+                    <div className="flex justify-between items-center pt-2">
                         <button
                             type="button"
-                            onClick={toggleDeliveryStatus}
+                            onClick={toggleDelivery}
                             disabled={isSubmitting}
-                            className={`px-5 py-2.5 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 ${formData.isDelivered
-                                    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                                    : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                                }`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg ${formData.isDelivered
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'} 
+                                transition-colors disabled:opacity-70 disabled:cursor-not-allowed`}
                         >
                             {formData.isDelivered ? (
                                 <>
-                                    <FiStopCircle />
-                                    Stop Delivery
+                                    <FiStopCircle /> Stop Delivery
                                 </>
                             ) : (
                                 <>
-                                    <FiPlayCircle />
-                                    Start Delivery
+                                    <FiTruck /> Start Delivery
                                 </>
                             )}
                         </button>

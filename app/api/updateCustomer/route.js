@@ -8,10 +8,16 @@ export async function PUT(req) {
         const body = await req.json()
 
         const { _id, name, phoneno, quantity, price, isDelivered } = body
+        const updateData = {}
+        if (name !== undefined) updateData.name = name
+        if (phoneno !== undefined) updateData.phoneno = phoneno
+        if (quantity !== undefined) updateData.quantity = quantity
+        if (price !== undefined) updateData.price = price
+        if (isDelivered !== undefined) updateData.isDelivered = isDelivered
 
         const updated = await Customer.findByIdAndUpdate(
             _id,
-            { name, phoneno, quantity, price, isDelivered },
+            updateData,
             { new: true }
         )
 
