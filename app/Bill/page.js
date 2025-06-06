@@ -131,9 +131,12 @@ export default function Bill() {
     }, [extras])
 
     const filteredCustomers = useMemo(() => {
-        return customers.filter(customer =>
-            customer.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    }, [customers, searchQuery])
+        return customers.filter(customer => {
+            const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
+            const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesSearch && billStatus.totalBill > 0;
+        });
+    }, [customers, searchQuery, deliveryData, extraMap, settledBills]);
 
     const fetchData = async () => {
         try {
@@ -550,12 +553,12 @@ export default function Bill() {
                             <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
                                 <FiUser className="text-gray-400 text-3xl" />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-800 mb-2">
-                                {searchQuery ? 'No matching customers found' : 'No Bills found'}
-                            </h3>
-                            <p className="text-gray-500 mb-6">
-                                {searchQuery ? 'Try a different search term' : 'Add your first customer to get started'}
-                            </p>
+                                <h3 className="text-lg font-medium text-gray-800 mb-2">
+                                    {searchQuery ? 'No matching customers found' : 'No bills to display'}
+                                </h3>
+                                <p className="text-gray-500 mb-6">
+                                    {searchQuery ? 'Try a different search term' : 'All customers have zero bills for this period'}
+                                </p>
                             <button
                                 onClick={fetchCustomers}
                                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
