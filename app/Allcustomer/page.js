@@ -138,67 +138,71 @@ export default function CustomerList() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid gap-4 md:gap-6">
-                        {customers.map((customer) => (
-                            <div
-                                key={customer._id}
-                                className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
-                            >
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <FiUser className="text-gray-400" />
-                                            <p className="font-medium text-gray-900 text-lg">{customer.name}</p>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <FiPhone className="text-gray-400" />
-                                            <p className="text-gray-600">{customer.phoneno}</p>
-                                        </div>
-                                    </div>
+                            <div className="grid gap-4 md:gap-6">
+                                {customers.map((customer) => (
+                                    <div
+                                        key={customer._id}
+                                        className={`p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border ${customer.isDelivered
+                                                ? 'bg-white border-gray-100'
+                                                : 'bg-red-50 border-red-200'
+                                            }`}
+                                    >
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <FiUser className="text-gray-400" />
+                                                    <p className="font-medium text-gray-900 text-lg">{customer.name}</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <FiPhone className="text-gray-400" />
+                                                    <p className="text-gray-600">{customer.phoneno}</p>
+                                                </div>
+                                            </div>
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <FiDroplet className="text-gray-400" />
-                                            <p>
-                                                <span className="font-medium">Quantity:</span> {customer.quantity} Ltr.
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <FiDollarSign className="text-gray-400" />
-                                            <p>
-                                                <span className="font-medium">Price:</span> ₹{customer.price.toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <FiDroplet className="text-gray-400" />
+                                                    <p>
+                                                        <span className="font-medium">Quantity:</span> {customer.quantity} Ltr.
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <FiDollarSign className="text-gray-400" />
+                                                    <p>
+                                                        <span className="font-medium">Price:</span> ₹{customer.price.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3">
-                                            <FiCalendar className="text-gray-400" />
-                                            <p>
-                                                <span className="font-medium">Start Date:</span> {formatDate(customer.startDate)}
-                                            </p>
-                                        </div>
-                                        <div className="flex justify-start md:justify-end gap-3 pt-2">
-                                            <button
-                                                onClick={() => openEditModal(customer)}
-                                                className="flex items-center gap-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                                            >
-                                                <FiEdit2 size={16} />
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={() => openDeleteModal(customer)}
-                                                className="flex items-center gap-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-                                            >
-                                                <FiTrash2 size={16} />
-                                                Delete
-                                            </button>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <FiCalendar className="text-gray-400" />
+                                                    <p>
+                                                        <span className="font-medium">Start Date:</span> {formatDate(customer.startDate)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex justify-start md:justify-end gap-3 pt-2">
+                                                    <button
+                                                        onClick={() => openEditModal(customer)}
+                                                        className="flex items-center gap-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                    >
+                                                        <FiEdit2 size={16} />
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openDeleteModal(customer)}
+                                                        className="flex items-center gap-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                                    >
+                                                        <FiTrash2 size={16} />
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                
                 )}
             </main>
 

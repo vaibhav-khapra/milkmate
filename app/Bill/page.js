@@ -23,11 +23,8 @@ import {
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
-
-
-
 const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => {
-    const baseAmount = customer.price * customer.quantity *(deliveryData[customer._id]?.totalDelivered ?? 0);
+    const baseAmount = customer.price * customer.quantity * (deliveryData[customer._id]?.totalDelivered ?? 0);
     const extraAmount = extraMap[customer.name] ? (extraMap[customer.name] * customer.price) : 0;
     const currentTotalBill = baseAmount + extraAmount;
     const existingBill = settledBills[customer.name];
@@ -89,6 +86,7 @@ export default function Bill() {
     const [settleLoading, setSettleLoading] = useState(false)
     const [settledBills, setSettledBills] = useState({})
     const [searchQuery, setSearchQuery] = useState('')
+    const [viewMode, setViewMode] = useState('unsettled') // 'unsettled' or 'settled'
 
     const getMonthOptions = () => {
         const currentDate = new Date()
@@ -134,9 +132,14 @@ export default function Bill() {
         return customers.filter(customer => {
             const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
             const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesSearch && billStatus.totalBill > 0;
+
+            if (viewMode === 'unsettled') {
+                return matchesSearch && billStatus.totalBill > 0 && !billStatus.isSettled;
+            } else {
+                return matchesSearch && billStatus.totalBill > 0 && billStatus.isSettled;
+            }
         });
-    }, [customers, searchQuery, deliveryData, extraMap, settledBills]);
+    }, [customers, searchQuery, deliveryData, extraMap, settledBills, viewMode]);
 
     const fetchData = async () => {
         try {
@@ -166,9 +169,6 @@ export default function Bill() {
             setLoading(false)
         }
     }
-    
-
-    
 
     const fetchSettledBills = async () => {
         try {
@@ -241,19 +241,21 @@ export default function Bill() {
             router.push('/')
         }
     }, [status, router])
+
     const handleRefresh = () => {
         setRefreshing(true);
         fetchData();
         fetchExtras();
         fetchSettledBills();
     };
+
     const totalCustomers = customers.length;
-     const pendingBills = useMemo(() => {
-            return customers.filter(customer => {
-                const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
-                return !billStatus.isSettled;
-            }).length;
-        }, [customers, deliveryData, extraMap, settledBills]);
+    const pendingBills = useMemo(() => {
+        return customers.filter(customer => {
+            const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
+            return !billStatus.isSettled;
+        }).length;
+    }, [customers, deliveryData, extraMap, settledBills]);
     const settledCount = totalCustomers - pendingBills;
 
     useEffect(() => {
@@ -441,13 +443,12 @@ export default function Bill() {
         <div className="min-h-screen bg-gray-50">
             <Navbar />
 
-
             <main className="p-4 md:p-8 max-w-7xl mx-auto">
                 <div>
                     <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Billing Overview</h1>
                         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm hover:shadow-md transition-shadow">
                                 <FiCalendar className="text-gray-500" />
                                 <select
                                     value={selectedMonth}
@@ -460,7 +461,21 @@ export default function Bill() {
                                         </option>
                                     ))}
                                 </select>
-                                {/* Chevron icon not added here to keep minimal */}
+                            </div>
+
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
+                                <button
+                                    onClick={() => setViewMode('unsettled')}
+                                    className={`px-3 py-1 rounded-lg text-sm ${viewMode === 'unsettled' ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                                >
+                                    Unsettled
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('settled')}
+                                    className={`px-3 py-1 rounded-lg text-sm ${viewMode === 'settled' ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}
+                                >
+                                    Settled
+                                </button>
                             </div>
 
                             <button
@@ -553,12 +568,14 @@ export default function Bill() {
                             <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
                                 <FiUser className="text-gray-400 text-3xl" />
                             </div>
-                                <h3 className="text-lg font-medium text-gray-800 mb-2">
-                                    {searchQuery ? 'No matching customers found' : 'No bills to display'}
-                                </h3>
-                                <p className="text-gray-500 mb-6">
-                                    {searchQuery ? 'Try a different search term' : 'All customers have zero bills for this period'}
-                                </p>
+                            <h3 className="text-lg font-medium text-gray-800 mb-2">
+                                {searchQuery ? 'No matching customers found' :
+                                    viewMode === 'unsettled' ? 'No unsettled bills to display' : 'No settled bills to display'}
+                            </h3>
+                            <p className="text-gray-500 mb-6">
+                                {searchQuery ? 'Try a different search term' :
+                                    viewMode === 'unsettled' ? 'All bills are settled for this period' : 'No bills have been settled yet'}
+                            </p>
                             <button
                                 onClick={fetchCustomers}
                                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
