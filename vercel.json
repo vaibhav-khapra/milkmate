@@ -2,8 +2,7 @@
     "crons": [
         {
             "path": "/api/cron/undelivered",
-            "schedule": "0 4 * * *",
-            "timezone": "Asia/Kolkata"
+            "schedule": "0 4 * * *"
         }
     ]
 }
