@@ -22,6 +22,7 @@ import {
     FiPlus
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
+import { usePathname } from 'next/navigation'
 
 const calculateBillStatus = (customer, deliveryData, extraMap, settledBills) => {
     const baseAmount = customer.price * customer.quantity * (deliveryData[customer._id]?.totalDelivered ?? 0);
@@ -87,7 +88,8 @@ export default function Bill() {
     const [settledBills, setSettledBills] = useState({})
     const [searchQuery, setSearchQuery] = useState('')
     const [viewMode, setViewMode] = useState('unsettled') // 'unsettled' or 'settled'
-
+    const pathname1 = usePathname();
+    
     const getMonthOptions = () => {
         const currentDate = new Date()
         const currentMonth = currentDate.getMonth()
@@ -163,7 +165,6 @@ export default function Bill() {
                 throw new Error(data.message || 'Failed to fetch data')
             }
         } catch (error) {
-            console.error('Error fetching data:', error)
             toast.error(error.message || 'Something went wrong while fetching data')
         } finally {
             setLoading(false)
@@ -195,7 +196,7 @@ export default function Bill() {
                 throw new Error(data.message || 'Failed to fetch settled bills')
             }
         } catch (error) {
-            console.error('Error fetching settled bills:', error)
+            
             toast.error(error.message || 'Something went wrong while fetching settled bills')
         }
     }
@@ -221,7 +222,6 @@ export default function Bill() {
                 throw new Error(data.message || 'Failed to fetch extras')
             }
         } catch (error) {
-            console.error('Error fetching extras:', error)
             toast.error(error.message || 'Something went wrong while fetching extras')
         }
     }
@@ -232,7 +232,7 @@ export default function Bill() {
                 fetchData(),
                 fetchExtras(),
                 fetchSettledBills()
-            ]).catch(console.error)
+            ])
         }
     }, [status, selectedMonth, selectedYear, session?.user?.email])
 
@@ -312,7 +312,6 @@ export default function Bill() {
                 throw new Error(data.message || 'Failed to record payment');
             }
         } catch (error) {
-            console.error('Error recording payment:', error);
             toast.error(error.message || 'Something went wrong while recording payment');
         } finally {
             setSettleLoading(false);
@@ -324,7 +323,6 @@ export default function Bill() {
             setRefreshing(true)
             await fetchData()
         } catch (error) {
-            console.error('Error refreshing customers:', error)
         } finally {
             setRefreshing(false)
         }
@@ -423,7 +421,7 @@ export default function Bill() {
     if (status === 'loading') {
         return (
             <div className="min-h-screen bg-gray-50">
-                <Navbar />
+                <Navbar pathname1={pathname1} />
 
                 <div className="p-6 max-w-6xl mx-auto">
                     <Skeleton height={40} width={240} className="mb-8 rounded-lg" />
@@ -441,7 +439,7 @@ export default function Bill() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navbar />
+            <Navbar pathname1={pathname1} />
 
             <main className="p-4 md:p-8 max-w-7xl mx-auto">
                 <div>
@@ -489,69 +487,7 @@ export default function Bill() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Total Customers</p>
-                                    <p className="text-2xl font-bold text-gray-800">{totalCustomers}</p>
-                                </div>
-                                <div className="p-3 bg-blue-50 rounded-full">
-                                    <FiUser className="text-blue-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Pending Bills</p>
-                                    <p className="text-2xl font-bold text-yellow-600">{pendingBills}</p>
-                                </div>
-                                <div className="p-3 bg-yellow-50 rounded-full">
-                                    <FiAlertCircle className="text-yellow-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Current Month</p>
-                                    <p className="text-xl font-bold text-gray-800">
-                                        {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                    </p>
-                                </div>
-                                <div className="p-3 bg-green-50 rounded-full">
-                                    <FiCalendar className="text-green-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Settled Bills</p>
-                                    <p className="text-2xl font-bold text-green-600">{settledCount}</p>
-                                </div>
-                                <div className="p-3 bg-green-50 rounded-full">
-                                    <FiCheck className="text-green-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Total Sales</p>
-                                    <p className="text-2xl font-bold text-purple-600">₹{totalSales.toLocaleString('en-IN')}</p>
-                                </div>
-                                <div className="p-3 bg-purple-50 rounded-full">
-                                    <FiDollarSign className="text-purple-500" size={20} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                   
                 </div>
 
                 {loading ? (
@@ -585,7 +521,8 @@ export default function Bill() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid gap-4">
+                    // Modified section: grid for customer cards and linear layout within cards
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Adjusted grid for customer cards */}
                         {filteredCustomers.map((customer) => {
                             const billStatus = calculateBillStatus(customer, deliveryData, extraMap, settledBills);
 
@@ -597,113 +534,108 @@ export default function Bill() {
                                     transition={{ duration: 0.2 }}
                                     className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                        <div className="space-y-3">
-                                            <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                                                <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                                <FiUser className="text-blue-500" />
-                                                {customer.name}
-                                            </h3>
-                                            <p className="text-gray-600 flex items-center gap-2">
+                                    {/* Linear layout for customer details within each card */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                            <div className={`w-3 h-3 rounded-full ${billStatus.isSettled ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                                            <FiUser className="text-blue-500" />
+                                            {customer.name}
+                                            <span className="ml-auto text-gray-600 flex items-center gap-1"> {/* Moved phone number next to name */}
                                                 <FiPhone className="text-gray-400" />
                                                 {customer.phoneno}
-                                            </p>
+                                            </span>
+                                        </h3>
+
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <FiDroplet className="text-blue-500" />
+                                            <span className="font-medium">Quantity:</span>
+                                            <span className="font-mono">{customer.quantity} Ltr.</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <FiDollarSign className="text-blue-500" />
+                                            <span className="font-medium">Price:</span>
+                                            <span className="font-mono">₹{customer.price.toLocaleString()}</span>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiDroplet className="text-blue-500" />
-                                                <span className="font-medium">Quantity:</span>
-                                                <span className="font-mono">{customer.quantity} Ltr.</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiDollarSign className="text-blue-500" />
-                                                <span className="font-medium">Price:</span>
-                                                <span className="font-mono">₹{customer.price.toLocaleString()}</span>
-                                            </div>
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <FiCalendar className="text-blue-500" />
+                                            <span className="font-medium">Start Date:</span>
+                                            <span>{formatDate(customer.startDate)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-gray-700">
+                                            <FiCheck className="text-blue-500" />
+                                            <span className="font-medium">Delivered:</span>
+                                            <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiCalendar className="text-blue-500" />
-                                                <span className="font-medium">Start Date:</span>
-                                                <span>{formatDate(customer.startDate)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-gray-700">
-                                                <FiCheck className="text-blue-500" />
-                                                <span className="font-medium">Delivered:</span>
-                                                <span className="font-mono">{deliveryData[customer._id]?.totalDelivered ?? 0} days</span>
-                                            </div>
-                                        </div>
+                                        {extraMap[customer.name] && (
+                                            <>
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiDroplet className="text-blue-500" />
+                                                    <span className="font-medium">Extra:</span>
+                                                    <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-gray-700">
+                                                    <FiDollarSign className="text-blue-500" />
+                                                    <span className="font-medium">Extra Bill:</span>
+                                                    <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
+                                                </div>
+                                            </>
+                                        )}
 
-                                        <div className="space-y-3">
-                                            {extraMap[customer.name] && (
-                                                <>
-                                                    <div className="flex items-center gap-2 text-gray-700">
-                                                        <FiDroplet className="text-blue-500" />
-                                                        <span className="font-medium">Extra:</span>
-                                                        <span className="font-mono">{extraMap[customer.name]} Ltr.</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-gray-700">
-                                                        <FiDollarSign className="text-blue-500" />
-                                                        <span className="font-medium">Extra Bill:</span>
-                                                        <span className="font-mono">₹{(extraMap[customer.name] * customer.price).toFixed(2)}</span>
-                                                    </div>
-                                                </>
+                                        <div className="pt-2 border-t border-gray-100 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium text-gray-700">Total Bill:</span>
+                                                <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
+                                            </div>
+
+                                            {billStatus.paid > 0 && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-medium text-gray-700">Paid:</span>
+                                                    <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
+                                                </div>
                                             )}
 
-                                            <div className="pt-2 border-t border-gray-100 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-medium text-gray-700">Total Bill:</span>
-                                                    <span className="font-mono font-semibold">₹{billStatus.totalBill.toFixed(2)}</span>
-                                                </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium text-gray-700">Remaining:</span>
+                                                <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                                    ₹{billStatus.remaining.toFixed(2)}
+                                                </span>
+                                            </div>
 
-                                                {billStatus.paid > 0 && (
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-medium text-gray-700">Paid:</span>
-                                                        <span className="font-mono text-green-600">₹{billStatus.paid.toFixed(2)}</span>
-                                                    </div>
-                                                )}
-
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-medium text-gray-700">Remaining:</span>
-                                                    <span className={`font-mono ${billStatus.remaining > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                                                        ₹{billStatus.remaining.toFixed(2)}
+                                            {billStatus.hasNewCharges && (
+                                                <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                                    <FiPlus className="text-yellow-600" size={14} />
+                                                    <span className="text-xs text-yellow-700 font-medium">
+                                                        New charges: ₹{billStatus.newCharges.toFixed(2)}
                                                     </span>
                                                 </div>
+                                            )}
 
-                                                {billStatus.hasNewCharges && (
-                                                    <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                                        <FiPlus className="text-yellow-600" size={14} />
-                                                        <span className="text-xs text-yellow-700 font-medium">
-                                                            New charges: ₹{billStatus.newCharges.toFixed(2)}
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                {settledBills[customer.name] && (
-                                                    <div className="text-xs text-gray-500 text-right">
-                                                        Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {billStatus.totalBill > 0 && !billStatus.isSettled && (
-                                                <div className="flex justify-end pt-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedCustomer(customer)
-                                                            setIsSettleOpen(true)
-                                                            setPaidAmount('')
-                                                        }}
-                                                        className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
-                                                    >
-                                                        <FiCreditCard size={14} />
-                                                        {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
-                                                    </button>
+                                            {settledBills[customer.name] && (
+                                                <div className="text-xs text-gray-500 text-right">
+                                                    Last payment: {new Date(settledBills[customer.name].settledAt).toLocaleDateString("en-IN")}
                                                 </div>
                                             )}
                                         </div>
+
+                                        {billStatus.totalBill > 0 && !billStatus.isSettled && (
+                                            <div className="flex justify-end pt-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedCustomer(customer)
+                                                        setIsSettleOpen(true)
+                                                        setPaidAmount('')
+                                                    }}
+                                                    className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-md flex items-center gap-1"
+                                                >
+                                                    <FiCreditCard size={14} />
+                                                    {billStatus.hasNewCharges ? 'Pay New Charges' : 'Settle Bill'}
+                                                </button>
+                                            </div>
+                                        )}
+                                        {/* Added Edit and Delete buttons as per the image */}
+                                      
                                     </div>
                                 </motion.div>
                             )

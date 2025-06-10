@@ -286,7 +286,7 @@ const Dashboard = () => {
         throw new Error(data.message || 'Failed to fetch data');
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      
       toast.error(error.message || 'Something went wrong while fetching data');
     } finally {
       setLoading(false);
@@ -314,7 +314,6 @@ const Dashboard = () => {
         throw new Error(data.message || 'Failed to fetch extras');
       }
     } catch (error) {
-      console.error('Error fetching extras:', error);
       toast.error(error.message || 'Something went wrong while fetching extras');
     }
   };
@@ -343,7 +342,6 @@ const Dashboard = () => {
         throw new Error(data.message || 'Failed to fetch settled bills');
       }
     } catch (error) {
-      console.error('Error fetching settled bills:', error);
       toast.error(error.message || 'Something went wrong while fetching settled bills');
     }
   };

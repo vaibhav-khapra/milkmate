@@ -7,6 +7,7 @@ import { FiChevronDown, FiCalendar, FiUsers } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 import DeliveryStatusComponent from '../components/DeliveryStatusComponent';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 const Monthlydata = () => {
     const { data: session, status } = useSession();
@@ -17,7 +18,8 @@ const Monthlydata = () => {
     const [dailyCombinedQuantities, setDailyCombinedQuantities] = useState({});
     const [extraSaleQuantitiesForDays, setExtraSaleQuantitiesForDays] = useState({});
     const [apiData, setApiData] = useState({ customers: [], undelivered: [], extras: [] });
-
+    const pathname1 = usePathname();
+   
     const getMonthOptions = () => {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
@@ -78,7 +80,6 @@ const Monthlydata = () => {
                 toast.error(customerData.message || extraData.message || 'Failed to fetch data');
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
             toast.error('Something went wrong while fetching data');
         } finally {
             setLoading(false);
@@ -269,7 +270,7 @@ const Monthlydata = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <Navbar />
+            <Navbar pathname1={pathname1} />
             <main className="p-4 md:p-8 max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>

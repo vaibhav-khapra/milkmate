@@ -2,10 +2,26 @@
 import React, { useState } from 'react'
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-const Navbar = () => {
+const Navbar = (props) => {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Helper function to determine if a link is active
+  const isActive = (href) => {
+    return pathname === href;
+  };
+
+  const baseLinkClasses = "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium";
+  const activeLinkClasses = "border-indigo-500 text-gray-900";
+  const inactiveLinkClasses = "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700";
+
+  const baseMobileLinkClasses = "block pl-3 pr-4 py-2 border-l-4 text-base font-medium";
+  const activeMobileLinkClasses = "bg-indigo-50 border-indigo-500 text-indigo-700";
+  const inactiveMobileLinkClasses = "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700";
+
 
   return (
     <>
@@ -20,31 +36,31 @@ const Navbar = () => {
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <Link
                     href="/"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                    className={`${baseLinkClasses} ${isActive("/") ? activeLinkClasses : inactiveLinkClasses}`}
                   >
                     Dashboard
                   </Link>
                   <Link
                     href="/Addcustomer"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                    className={`${baseLinkClasses} ${isActive("/Addcustomer") ? activeLinkClasses : inactiveLinkClasses}`}
                   >
                     Add Customer
                   </Link>
                   <Link
                     href="/Allcustomer"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                    className={`${baseLinkClasses} ${isActive("/Allcustomer") ? activeLinkClasses : inactiveLinkClasses}`}
                   >
                     All Customers
                   </Link>
                   <Link
                     href="/Bill"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                    className={`${baseLinkClasses} ${isActive("/Bill") ? activeLinkClasses : inactiveLinkClasses}`}
                   >
                     Bills
                   </Link>
                   <Link
                     href="/Monthlydata"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                    className={`${baseLinkClasses} ${isActive("/Monthlydata") ? activeLinkClasses : inactiveLinkClasses}`}
                   >
                     Monthly Data
                   </Link>
@@ -54,8 +70,6 @@ const Navbar = () => {
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               <span className="text-gray-500 mr-4 text-sm font-medium">
                 {new Date().getDate()} {new Date().toLocaleString('default', { month: 'long' })}
-
-
               </span>
               {!session ? (
                 <button
@@ -135,35 +149,35 @@ const Navbar = () => {
                 <>
                   <Link
                     href="/"
-                    className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                    className={`${baseMobileLinkClasses} ${isActive("/") ? activeMobileLinkClasses : inactiveMobileLinkClasses}`}
                     onClick={() => setIsOpen(false)}
                   >
                     Dashboard
                   </Link>
                   <Link
                     href="/Addcustomer"
-                    className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                    className={`${baseMobileLinkClasses} ${isActive("/Addcustomer") ? activeMobileLinkClasses : inactiveMobileLinkClasses}`}
                     onClick={() => setIsOpen(false)}
                   >
                     Add Customer
                   </Link>
                   <Link
                     href="/Allcustomer"
-                    className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                    className={`${baseMobileLinkClasses} ${isActive("/Allcustomer") ? activeMobileLinkClasses : inactiveMobileLinkClasses}`}
                     onClick={() => setIsOpen(false)}
                   >
                     All Customers
                   </Link>
                   <Link
                     href="/Bill"
-                    className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                    className={`${baseMobileLinkClasses} ${isActive("/Bill") ? activeMobileLinkClasses : inactiveMobileLinkClasses}`}
                     onClick={() => setIsOpen(false)}
                   >
                     Bills
                   </Link>
                   <Link
                     href="/Monthlydata"
-                    className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                    className={`${baseMobileLinkClasses} ${isActive("/Monthlydata") ? activeMobileLinkClasses : inactiveMobileLinkClasses}`}
                     onClick={() => setIsOpen(false)}
                   >
                     Monthly Data

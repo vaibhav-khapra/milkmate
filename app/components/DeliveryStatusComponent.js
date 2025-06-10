@@ -70,7 +70,6 @@ const DeliveryStatusComponent = ({
                 throw new Error(data.message || 'Failed to update delivery status');
             }
         } catch (error) {
-            console.error('Error toggling delivery status:', error);
             toast.error(error.message || 'Something went wrong');
         } finally {
             setIsToggling(false);

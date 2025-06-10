@@ -40,8 +40,6 @@ const CustomerDeliveryStatus = ({
                 dateNotDelivered: today
             }));
 
-            console.log("Sending to /api/saveUndelivered:", customersToSave);
-
             const res = await fetch('/api/saveUndelivered', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -56,7 +54,6 @@ const CustomerDeliveryStatus = ({
                 toast.error(data.message || 'Failed to update status');
             }
         } catch (error) {
-            console.error('Error updating delivery status:', error);
             toast.error('Something went wrong');
         }
     };
