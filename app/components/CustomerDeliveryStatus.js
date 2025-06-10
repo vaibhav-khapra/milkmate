@@ -3,34 +3,44 @@ import toast from 'react-hot-toast';
 
 const CustomerDeliveryStatus = ({
     undeliveredCustomers,
-    setUndeliveredCustomers,
+    setUndeliveredCustomers, // For optimistic UI
     loading,
     setTogglingId,
     togglingId,
-    fetchCustomers,
+    fetchCustomers, // To refetch customer data
+    session // To get ownerEmail
 }) => {
     const handleCheckboxChange = async (customerId) => {
         setTogglingId(customerId);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            setUndeliveredCustomers(prev =>
-                prev.map(c => c._id === customerId ? { ...c, isDelivered: !c.isDelivered } : c)
-            );
-        } finally {
-            setTogglingId(null);
-        }
+
+        // Optimistic UI update
+        setUndeliveredCustomers(prev =>
+            prev.map(c =>
+                c._id === customerId ? { ...c, isDelivered: !c.isDelivered } : c
+            )
+        );
+
+        // Reset spinner shortly after toggle for better UX
+        setTimeout(() => setTogglingId(null), 300);
     };
 
     const saveUndeliveredCustomers = async () => {
+        if (!session?.user?.email) {
+            toast.error("Owner email is missing. Please log in.");
+            return;
+        }
+
         try {
             const today = new Date().toISOString().split('T')[0];
 
-            const customersToSave = undeliveredCustomers.map(({ name, ownerEmail, isDelivered }) => ({
-                name,
-                ownerEmail,
-                isDelivered,
+            const customersToSave = undeliveredCustomers.map(customer => ({
+                name: customer.name,
+                ownerEmail: session.user.email,
+                isDelivered: customer.isDelivered,
                 dateNotDelivered: today
             }));
+
+            console.log("Sending to /api/saveUndelivered:", customersToSave);
 
             const res = await fetch('/api/saveUndelivered', {
                 method: 'POST',
@@ -41,7 +51,7 @@ const CustomerDeliveryStatus = ({
             const data = await res.json();
             if (data.success) {
                 toast.success('Delivery status updated successfully');
-                fetchCustomers();
+                fetchCustomers(); // Refresh customers list
             } else {
                 toast.error(data.message || 'Failed to update status');
             }
@@ -64,7 +74,7 @@ const CustomerDeliveryStatus = ({
                         <>
                             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             Saving...
                         </>

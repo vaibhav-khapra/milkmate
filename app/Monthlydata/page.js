@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from "next-auth/react";
 import toast from 'react-hot-toast';
-import { FiChevronDown, FiCheck, FiX, FiCalendar, FiUsers } from 'react-icons/fi';
+import { FiChevronDown, FiCalendar, FiUsers } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 import DeliveryStatusComponent from '../components/DeliveryStatusComponent';
 import { useRouter } from 'next/navigation';
@@ -13,8 +13,10 @@ const Monthlydata = () => {
     const [loading, setLoading] = useState(true);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-    const [deliveryData, setDeliveryData] = useState({});
-    const [apiData, setApiData] = useState({ customers: [], undelivered: [] });
+    const [baseDeliveryStatus, setBaseDeliveryStatus] = useState({});
+    const [dailyCombinedQuantities, setDailyCombinedQuantities] = useState({});
+    const [extraSaleQuantitiesForDays, setExtraSaleQuantitiesForDays] = useState({});
+    const [apiData, setApiData] = useState({ customers: [], undelivered: [], extras: [] });
 
     const getMonthOptions = () => {
         const currentDate = new Date();
@@ -24,56 +26,55 @@ const Monthlydata = () => {
 
         for (let i = 0; i < 6; i++) {
             const month = (currentMonth - i + 12) % 12;
-            const year = month > currentMonth ? currentYear - 1 : currentYear;
+            const year = (month > currentMonth && i > 0) ? currentYear - 1 : currentYear;
+
             options.push({
                 value: month,
                 year: year,
                 label: new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })
             });
         }
-
         return options;
     };
 
-    const monthOptions = getMonthOptions();
+    const monthOptions = useMemo(getMonthOptions, []);
     const router = useRouter();
-
-    useEffect(() => {
-        if (status === 'authenticated') {
-            fetchData();
-        }
-    }, [status]);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push("/");
         }
-    }, [status]);
-
-    useEffect(() => {
-        if (apiData.customers.length > 0) {
-            generateDeliveryData();
-        }
-    }, [apiData, selectedMonth, selectedYear]);
+    }, [status, router]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/allcustomer', {
+            const customerRes = await fetch('/api/allcustomer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ownerEmail: session?.user?.email }),
             });
+            const customerData = await customerRes.json();
 
-            const data = await res.json();
+            const extraRes = await fetch('/api/totalextra', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ownerEmail: session?.user?.email,
+                    month: selectedMonth,
+                    year: selectedYear,
+                })
+            });
+            const extraData = await extraRes.json();
 
-            if (data.success) {
+            if (customerData.success && extraData.success) {
                 setApiData({
-                    customers: data.customers,
-                    undelivered: data.undelivered
+                    customers: customerData.customers,
+                    undelivered: customerData.undelivered,
+                    extras: extraData.extras
                 });
             } else {
-                toast.error(data.message || 'Failed to fetch data');
+                toast.error(customerData.message || extraData.message || 'Failed to fetch data');
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -83,15 +84,38 @@ const Monthlydata = () => {
         }
     };
 
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user?.email) {
+            fetchData();
+        }
+    }, [status, session?.user?.email, selectedMonth, selectedYear]);
+
+
+    useEffect(() => {
+        if (apiData.customers.length > 0) {
+            generateDeliveryData();
+        } else {
+            setBaseDeliveryStatus({});
+            setDailyCombinedQuantities({});
+            setExtraSaleQuantitiesForDays({});
+        }
+    }, [apiData, selectedMonth, selectedYear]);
+
     const generateDeliveryData = () => {
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-        const data = {};
+        const newBaseDeliveryStatus = {};
+        const newCombinedQuantities = {};
+        const newExtraSaleQuantitiesForDays = {};
+
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const formatDate = (date) => date.toLocaleDateString('en-CA');
 
         const undeliveredMap = {};
         apiData.undelivered.forEach(record => {
             const recordDate = new Date(record.dateNotDelivered);
+            recordDate.setHours(0, 0, 0, 0);
             const recordDateString = formatDate(recordDate);
             if (!undeliveredMap[record.name]) {
                 undeliveredMap[record.name] = new Set();
@@ -99,58 +123,108 @@ const Monthlydata = () => {
             undeliveredMap[record.name].add(recordDateString);
         });
 
+        const extraMap = {};
+        apiData.extras.forEach(extra => {
+            const extraDate = new Date(extra.date);
+            extraDate.setHours(0, 0, 0, 0);
+            const extraDateString = formatDate(extraDate);
+            if (!extraMap[extraDateString]) {
+                extraMap[extraDateString] = {};
+            }
+            if (!extraMap[extraDateString][extra.name]) {
+                extraMap[extraDateString][extra.name] = 0;
+            }
+            extraMap[extraDateString][extra.name] += extra.quantity;
+        });
+
         apiData.customers.forEach(customer => {
             const customerStartDate = new Date(customer.startDate);
-            const customerStartYear = customerStartDate.getFullYear();
-            const customerStartMonth = customerStartDate.getMonth();
-            const customerStartDay = customerStartDate.getDate();
+            customerStartDate.setHours(0, 0, 0, 0);
 
-            data[customer._id] = {
+            newBaseDeliveryStatus[customer._id] = {
+                name: customer.name,
+                quantity: customer.quantity,
+                days: {}
+            };
+            newCombinedQuantities[customer._id] = {
+                name: customer.name,
+                days: {}
+            };
+            newExtraSaleQuantitiesForDays[customer._id] = {
                 name: customer.name,
                 days: {}
             };
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const currentDate = new Date(selectedYear, selectedMonth, day);
+                currentDate.setHours(0, 0, 0, 0);
                 const currentDateString = formatDate(currentDate);
 
-                if (currentDate > today) {
-                    data[customer._id].days[day] = 'future';
+                const customerStarted = (currentDate >= customerStartDate);
+
+                if (!customerStarted) {
+                    newBaseDeliveryStatus[customer._id].days[day] = 'not-started';
+                    newCombinedQuantities[customer._id].days[day] = '-';
+                    newExtraSaleQuantitiesForDays[customer._id].days[day] = 0;
                     continue;
                 }
 
-                if (
-                    selectedYear < customerStartYear ||
-                    (selectedYear === customerStartYear && selectedMonth < customerStartMonth) ||
-                    (selectedYear === customerStartYear && selectedMonth === customerStartMonth && day < customerStartDay)
-                ) {
-                    data[customer._id].days[day] = 'not-started';
+                if (currentDate > today) {
+                    newBaseDeliveryStatus[customer._id].days[day] = 'future';
+                    newCombinedQuantities[customer._id].days[day] = '-';
+                    newExtraSaleQuantitiesForDays[customer._id].days[day] = 0;
                     continue;
                 }
 
                 const isUndelivered = undeliveredMap[customer.name]?.has(currentDateString);
-                data[customer._id].days[day] = isUndelivered ? 'undelivered' : 'delivered';
+                const status = isUndelivered ? 'undelivered' : 'delivered';
+                newBaseDeliveryStatus[customer._id].days[day] = status;
+
+                const extraForCustomerOnDay = extraMap[currentDateString]?.[customer.name] || 0;
+                newExtraSaleQuantitiesForDays[customer._id].days[day] = extraForCustomerOnDay;
+
+                let totalQuantityForDay = 0;
+                if (status === 'delivered') {
+                    totalQuantityForDay += customer.quantity;
+                }
+                totalQuantityForDay += extraForCustomerOnDay;
+
+                newCombinedQuantities[customer._id].days[day] = totalQuantityForDay;
             }
         });
 
-        setDeliveryData(data);
+        setBaseDeliveryStatus(newBaseDeliveryStatus);
+        setDailyCombinedQuantities(newCombinedQuantities);
+        setExtraSaleQuantitiesForDays(newExtraSaleQuantitiesForDays);
     };
 
     const handleMonthChange = (e) => {
         const selectedOption = monthOptions.find(opt => opt.value.toString() === e.target.value);
-        setSelectedMonth(selectedOption.value);
-        setSelectedYear(selectedOption.year);
+        if (selectedOption) {
+            setSelectedMonth(selectedOption.value);
+            setSelectedYear(selectedOption.year);
+        }
     };
 
-    const shouldShowCustomer = (customerId) => {
-        const customerData = deliveryData[customerId];
-        if (!customerData) return false;
+    const filteredCustomers = useMemo(() => {
+        return apiData.customers.filter(customer => {
+            const customerBaseStatus = baseDeliveryStatus[customer._id];
+            const customerCombinedQty = dailyCombinedQuantities[customer._id];
 
-        // Check if at least one day is delivered
-        return Object.values(customerData.days).some(
-            status => status === 'delivered'
-        );
-    };
+            if (!customerBaseStatus || !customerCombinedQty) return false;
+
+            const hasActivity = Object.values(customerBaseStatus.days).some(
+                status => status !== 'not-started' && status !== 'future'
+            ) || Object.values(customerCombinedQty.days).some(
+                qty => typeof qty === 'number' && qty > 0
+            );
+            return hasActivity;
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [apiData.customers, baseDeliveryStatus, dailyCombinedQuantities]);
+
+
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     if (status === 'loading' || loading) {
         return (
@@ -166,10 +240,6 @@ const Monthlydata = () => {
             </div>
         );
     }
-
-    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-    const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const filteredCustomers = apiData.customers.filter(customer => shouldShowCustomer(customer._id));
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -232,37 +302,26 @@ const Monthlydata = () => {
                                                 </div>
                                             </td>
                                             {daysArray.map(day => {
-                                                const status = deliveryData[customer._id]?.days[day] || 'not-started';
-
-                                                if (status === 'not-started' || status === 'future') {
-                                                    return (
-                                                        <td key={`${customer._id}-${day}`} className="px-1 py-4 text-center">
-                                                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${status === 'future' ? 'text-gray-200' : 'text-gray-300'}`}>
-                                                                -
-                                                            </span>
-                                                        </td>
-                                                    );
-                                                }
+                                                const currentDayBaseStatus = baseDeliveryStatus[customer._id]?.days[day] || 'not-started';
+                                                const quantityToDisplay = dailyCombinedQuantities[customer._id]?.days[day];
+                                                const extraQuantityForThisDay = extraSaleQuantitiesForDays[customer._id]?.days[day] || 0;
+                                                const dateForToggle = new Date(selectedYear, selectedMonth, day).toISOString();
 
                                                 return (
                                                     <td key={`${customer._id}-${day}`} className="px-1 py-4 text-center">
                                                         <div className="flex items-center justify-center">
                                                             <DeliveryStatusComponent
-                                                                status={status}
+                                                                currentDayStatus={currentDayBaseStatus}
+                                                                displayQuantity={quantityToDisplay}
                                                                 customer={{
+                                                                    _id: customer._id,
                                                                     name: customer.name,
-                                                                    ownerEmail: session?.user?.email,
-                                                                    dateNotDelivered: new Date(selectedYear, selectedMonth, day).toISOString()
                                                                 }}
-                                                                onChangeStatus={(newStatus) => {
-                                                                    setDeliveryData(prev => {
-                                                                        const updated = { ...prev };
-                                                                        if (updated[customer._id]) {
-                                                                            updated[customer._id].days[day] = newStatus;
-                                                                        }
-                                                                        return updated;
-                                                                    });
-                                                                }}
+                                                                customerBaseQuantity={customer.quantity}
+                                                                extraSaleQuantityForDay={extraQuantityForThisDay}
+                                                                dateForToggle={dateForToggle}
+                                                                ownerEmail={session?.user?.email} 
+                                                                onChangeStatus={fetchData}
                                                             />
                                                         </div>
                                                     </td>
@@ -295,23 +354,25 @@ const Monthlydata = () => {
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm">
                     <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
                         <div className="w-4 h-4 bg-green-50 rounded-full flex items-center justify-center">
-                            <FiCheck className="text-green-500 text-xs" />
+                            <span className="font-semibold text-green-700">Q</span>
                         </div>
-                        <span className="text-gray-600">Delivered</span>
+                        <span className="text-gray-600">Delivered (Base + Extra)</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
+                        <div className="w-4 h-4 bg-yellow-50 rounded-full flex items-center justify-center">
+                            <span className="font-semibold text-yellow-700">Q</span>
+                        </div>
+                        <span className="text-gray-600">Extra Sale Only (Base Not Delivered)</span>
                     </div>
                     <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
                         <div className="w-4 h-4 bg-red-50 rounded-full flex items-center justify-center">
-                            <FiX className="text-red-500 text-xs" />
+                            <span className="font-semibold text-red-700">0</span>
                         </div>
-                        <span className="text-gray-600">Not Delivered</span>
+                        <span className="text-gray-600">Not Delivered (No Extra Sale)</span>
                     </div>
                     <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
                         <span className="text-gray-300">-</span>
-                        <span className="text-gray-600">Not Started</span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
-                        <span className="text-gray-200">-</span>
-                        <span className="text-gray-600">Future Date</span>
+                        <span className="text-gray-600">Not Started / Future</span>
                     </div>
                 </div>
             </main>

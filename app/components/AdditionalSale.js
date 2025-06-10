@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiX, FiTrash2, FiEdit2, FiAlertTriangle, FiCalendar, FiUser, FiDroplet, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-export default function AdditionalSale({ customers }) {
+export default function AdditionalSale({ customers, month }) {
     const { data: session, status } = useSession();
     const [isOpen, setIsOpen] = useState(false);
     const [extra, setExtra] = useState([]);
@@ -81,7 +81,7 @@ export default function AdditionalSale({ customers }) {
         if (status === 'authenticated') {
             fetchSales();
         }
-    }, [status]);
+    }, [status, month]); // Add month to dependency array
 
     const fetchSales = async () => {
         setIsLoading(true);
@@ -91,7 +91,10 @@ export default function AdditionalSale({ customers }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ ownerEmail: session?.user?.email }),
+                body: JSON.stringify({
+                    ownerEmail: session?.user?.email,
+                    month: month // Pass the selected month to the API
+                }),
             });
 
             const data = await res.json();
@@ -175,20 +178,36 @@ export default function AdditionalSale({ customers }) {
         reset();
     };
 
+    // Filter sales by selected month (client-side fallback)
+    const filteredSales = extra.filter(sale => {
+        if (month === undefined) return true;
+        const saleDate = new Date(sale.date);
+        return saleDate.getMonth() === month;
+    });
+
     // Pagination logic
     const indexOfLastSale = currentPage * salesPerPage;
     const indexOfFirstSale = indexOfLastSale - salesPerPage;
-    const currentSales = extra.slice(indexOfFirstSale, indexOfLastSale);
-    const totalPages = Math.ceil(extra.length / salesPerPage);
+    const currentSales = filteredSales.slice(indexOfFirstSale, indexOfLastSale);
+    const totalPages = Math.ceil(filteredSales.length / salesPerPage);
 
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    // Get month name for display
+    const monthName = month !== undefined
+        ? new Date(0, month).toLocaleString('default', { month: 'long' })
+        : 'All';
 
     return (
         <div className="p-6 mt-6 bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">Additional Sales</h2>
-                    <p className="text-sm text-gray-500 mt-1">Track one-time sales outside regular deliveries</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {month !== undefined
+                            ? `Showing sales for ${monthName}`
+                            : 'Track one-time sales outside regular deliveries'}
+                    </p>
                 </div>
                 <button
                     onClick={() => setIsOpen(true)}
@@ -208,7 +227,7 @@ export default function AdditionalSale({ customers }) {
                         </div>
                     ))}
                 </div>
-            ) : extra.length > 0 ? (
+            ) : filteredSales.length > 0 ? (
                 <div className="space-y-4">
                     <div className="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
                         <div className="overflow-x-auto">
@@ -263,14 +282,14 @@ export default function AdditionalSale({ customers }) {
                     </div>
 
                     {/* Pagination controls */}
-                    {extra.length > salesPerPage && (
+                    {filteredSales.length > salesPerPage && (
                         <div className="flex items-center justify-between px-2 py-3">
                             <div className="text-sm text-gray-500">
                                 Showing <span className="font-medium">{indexOfFirstSale + 1}</span> to{' '}
                                 <span className="font-medium">
-                                    {Math.min(indexOfLastSale, extra.length)}
+                                    {Math.min(indexOfLastSale, filteredSales.length)}
                                 </span>{' '}
-                                of <span className="font-medium">{extra.length}</span> sales
+                                of <span className="font-medium">{filteredSales.length}</span> sales
                             </div>
                             <div className="flex space-x-2">
                                 <button
@@ -295,7 +314,11 @@ export default function AdditionalSale({ customers }) {
                 <div className="text-center py-12 bg-gray-50 rounded-lg">
                     <FiDroplet className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No additional sales</h3>
-                    <p className="mt-1 text-sm text-gray-500">Get started by adding a new sale.</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                        {month !== undefined
+                            ? `No sales found for ${monthName}`
+                            : 'Get started by adding a new sale.'}
+                    </p>
                     <div className="mt-6">
                         <button
                             onClick={() => setIsOpen(true)}
