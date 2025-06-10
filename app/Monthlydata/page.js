@@ -26,6 +26,7 @@ const Monthlydata = () => {
 
         for (let i = 0; i < 6; i++) {
             const month = (currentMonth - i + 12) % 12;
+            // Adjust year for previous months if they cross into the previous year
             const year = (month > currentMonth && i > 0) ? currentYear - 1 : currentYear;
 
             options.push({
@@ -95,6 +96,7 @@ const Monthlydata = () => {
         if (apiData.customers.length > 0) {
             generateDeliveryData();
         } else {
+            // Clear data if no customers are present to avoid stale data display
             setBaseDeliveryStatus({});
             setDailyCombinedQuantities({});
             setExtraSaleQuantitiesForDays({});
@@ -108,10 +110,11 @@ const Monthlydata = () => {
         const newExtraSaleQuantitiesForDays = {};
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0); // Normalize today's date to start of day
 
-        const formatDate = (date) => date.toLocaleDateString('en-CA');
+        const formatDate = (date) => date.toLocaleDateString('en-CA'); // Consistent date string for mapping
 
+        // Pre-process undelivered and extra data for efficient lookup
         const undeliveredMap = {};
         apiData.undelivered.forEach(record => {
             const recordDate = new Date(record.dateNotDelivered);
@@ -233,7 +236,6 @@ const Monthlydata = () => {
                 if (currentDate > today) continue;
 
                 const status = customerBaseStatus.days[day];
-                const quantity = customerCombinedQty.days[day];
                 const extraQuantity = extraSaleQuantitiesForDays[customer._id]?.days[day] || 0;
 
                 // If base delivery was "delivered" OR if there was any extra sale quantity
@@ -243,7 +245,7 @@ const Monthlydata = () => {
                 }
             }
             return hasActivityInSelectedMonth;
-        }).sort((a, b) => a.name.localeCompare(b.name));
+        }).sort((a, b) => a.name.localeCompare(b.name)); // Sort customers alphabetically
     }, [apiData.customers, baseDeliveryStatus, dailyCombinedQuantities, extraSaleQuantitiesForDays, selectedMonth, selectedYear]);
 
 
@@ -254,7 +256,7 @@ const Monthlydata = () => {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
                 <Navbar />
-                <div className="p-4 md:p-8">
+                <div className="p-4 md:p-8 max-w-7xl mx-auto"> {/* Centered loading state */}
                     <div className="flex justify-between items-center mb-6">
                         <div className="h-8 w-64 bg-gray-200 rounded-full animate-pulse"></div>
                         <div className="h-10 w-40 bg-gray-200 rounded-full animate-pulse"></div>
@@ -272,7 +274,7 @@ const Monthlydata = () => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Delivery Records</h1>
-                        <p className="text-gray-500 mt-2">Track daily delivery status for all customers</p>
+                        <p className="text-gray-500 mt-2 text-sm md:text-base">Track daily delivery status for all customers</p>
                     </div>
                     <div className="relative w-full md:w-auto">
                         <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -280,7 +282,7 @@ const Monthlydata = () => {
                             <select
                                 value={selectedMonth}
                                 onChange={handleMonthChange}
-                                className="appearance-none bg-transparent pr-8 py-1 text-gray-700 focus:outline-none cursor-pointer"
+                                className="appearance-none bg-transparent pr-8 py-1 text-gray-700 focus:outline-none cursor-pointer w-full" // w-full for mobile
                             >
                                 {monthOptions.map((option) => (
                                     <option key={`${option.year}-${option.value}`} value={option.value}>
@@ -295,16 +297,16 @@ const Monthlydata = () => {
 
                 {filteredCustomers.length > 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto"> {/* This handles horizontal scrolling for the table */}
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[250px]">
+                                        <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[200px] sm:min-w-[250px]"> {/* Adjusted min-width for better mobile */}
                                             Customer
                                         </th>
                                         {daysArray.map(day => (
                                             <th key={day} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700">
+                                                <span className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-100 text-gray-700 text-xs sm:text-sm"> {/* Smaller day circle on mobile */}
                                                     {day}
                                                 </span>
                                             </th>
@@ -316,11 +318,11 @@ const Monthlydata = () => {
                                         <tr key={customer._id} className="hover:bg-gray-50/50 transition-colors duration-150">
                                             <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-blue-600 font-medium shadow-inner">
+                                                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-blue-600 font-medium shadow-inner text-sm sm:text-base"> {/* Adjusted avatar size */}
                                                         {customer.name.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium text-gray-900">{customer.name}</div>
+                                                        <div className="font-medium text-gray-900 text-sm sm:text-base">{customer.name}</div> {/* Adjusted text size */}
                                                         <div className="text-xs text-gray-500">Since {new Date(customer.startDate).toLocaleDateString("en-IN")}</div>
                                                     </div>
                                                 </div>
@@ -360,13 +362,13 @@ const Monthlydata = () => {
                 ) : (
                     <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-200 text-center">
                         <div className="flex flex-col items-center justify-center py-12">
-                            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <FiUsers className="text-gray-400 text-3xl" />
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4"> {/* Adjusted icon container size */}
+                                <FiUsers className="text-gray-400 text-2xl sm:text-3xl" /> {/* Adjusted icon size */}
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                                 {apiData.customers.length === 0 ? "No customers found" : "No deliveries found"}
                             </h3>
-                            <p className="text-gray-500 max-w-md">
+                            <p className="text-gray-500 max-w-xs sm:max-w-md text-sm sm:text-base"> {/* Adjusted text size and max-width */}
                                 {apiData.customers.length === 0
                                     ? "You don't have any customers yet. Add customers to track deliveries."
                                     : "No customers had deliveries in the selected month. Try selecting a different month."}
@@ -375,27 +377,27 @@ const Monthlydata = () => {
                     </div>
                 )}
 
-                <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm">
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
-                        <div className="w-4 h-4 bg-green-50 rounded-full flex items-center justify-center">
-                            <span className="font-semibold text-green-700">Q</span>
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm"> {/* Adjusted legend text size */}
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-green-50 rounded-full flex items-center justify-center">
+                            <span className="font-semibold text-green-700 text-xs">Q</span> {/* Smaller Q */}
                         </div>
                         <span className="text-gray-600">Delivered (Base + Extra)</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
-                        <div className="w-4 h-4 bg-yellow-50 rounded-full flex items-center justify-center">
-                            <span className="font-semibold text-yellow-700">Q</span>
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-yellow-50 rounded-full flex items-center justify-center">
+                            <span className="font-semibold text-yellow-700 text-xs">Q</span> {/* Smaller Q */}
                         </div>
                         <span className="text-gray-600">Extra Sale Only (Base Not Delivered)</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
-                        <div className="w-4 h-4 bg-red-50 rounded-full flex items-center justify-center">
-                            <span className="font-semibold text-red-700">0</span>
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
+                        <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-50 rounded-full flex items-center justify-center">
+                            <span className="font-semibold text-red-700 text-xs">0</span> {/* Smaller 0 */}
                         </div>
                         <span className="text-gray-600">Not Delivered (No Extra Sale)</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
-                        <span className="text-gray-300">-</span>
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-gray-200 shadow-xs hover:shadow-sm transition-all">
+                        <span className="text-gray-300 text-lg sm:text-xl leading-none">-</span> {/* Adjusted size for '-' */}
                         <span className="text-gray-600">Not Started / Future</span>
                     </div>
                 </div>
