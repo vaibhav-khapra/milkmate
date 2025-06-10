@@ -169,6 +169,7 @@ const Monthlydata = () => {
                     continue;
                 }
 
+                // If the current date is in the future, mark as 'future'
                 if (currentDate > today) {
                     newBaseDeliveryStatus[customer._id].days[day] = 'future';
                     newCombinedQuantities[customer._id].days[day] = '-';
@@ -211,16 +212,39 @@ const Monthlydata = () => {
             const customerBaseStatus = baseDeliveryStatus[customer._id];
             const customerCombinedQty = dailyCombinedQuantities[customer._id];
 
-            if (!customerBaseStatus || !customerCombinedQty) return false;
+            if (!customerBaseStatus || !customerCombinedQty) {
+                // If data for this customer hasn't been generated yet for the selected month,
+                // or if there's an issue, default to not showing them.
+                return false;
+            }
 
-            const hasActivity = Object.values(customerBaseStatus.days).some(
-                status => status !== 'not-started' && status !== 'future'
-            ) || Object.values(customerCombinedQty.days).some(
-                qty => typeof qty === 'number' && qty > 0
-            );
-            return hasActivity;
+            // A customer should be shown if they have any activity (delivery or extra sale)
+            // within the currently selected month, for days up to 'today'.
+            const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let hasActivityInSelectedMonth = false;
+            for (let day = 1; day <= daysInSelectedMonth; day++) {
+                const currentDate = new Date(selectedYear, selectedMonth, day);
+                currentDate.setHours(0, 0, 0, 0);
+
+                // Only consider days up to or before today
+                if (currentDate > today) continue;
+
+                const status = customerBaseStatus.days[day];
+                const quantity = customerCombinedQty.days[day];
+                const extraQuantity = extraSaleQuantitiesForDays[customer._id]?.days[day] || 0;
+
+                // If base delivery was "delivered" OR if there was any extra sale quantity
+                if (status === 'delivered' || extraQuantity > 0) {
+                    hasActivityInSelectedMonth = true;
+                    break;
+                }
+            }
+            return hasActivityInSelectedMonth;
         }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [apiData.customers, baseDeliveryStatus, dailyCombinedQuantities]);
+    }, [apiData.customers, baseDeliveryStatus, dailyCombinedQuantities, extraSaleQuantitiesForDays, selectedMonth, selectedYear]);
 
 
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -320,7 +344,7 @@ const Monthlydata = () => {
                                                                 customerBaseQuantity={customer.quantity}
                                                                 extraSaleQuantityForDay={extraQuantityForThisDay}
                                                                 dateForToggle={dateForToggle}
-                                                                ownerEmail={session?.user?.email} 
+                                                                ownerEmail={session?.user?.email}
                                                                 onChangeStatus={fetchData}
                                                             />
                                                         </div>
