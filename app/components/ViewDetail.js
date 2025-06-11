@@ -115,6 +115,11 @@ export default function ViewDetail({ owner, onClose }) {
         });
     };
 
+    const formatPhoneNumber = (phone) => {
+        if (!phone) return 'N/A';
+        return phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    };
+
     const openAdditionalSaleModal = (customer) => {
         setSelectedCustomerForSale(customer);
         setIsAddSaleOpen(true);
@@ -183,11 +188,10 @@ export default function ViewDetail({ owner, onClose }) {
 
     const renderOwnerView = () => (
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto flex flex-col overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white relative">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h2 className="text-2xl font-bold font-sans">Owner Profile</h2>
+                        <h2 className="text-2xl font-bold">Owner Profile</h2>
                         <p className="text-blue-100 text-sm mt-1">Detailed information</p>
                     </div>
                     <button
@@ -200,7 +204,6 @@ export default function ViewDetail({ owner, onClose }) {
                 </div>
             </div>
 
-            {/* Content */}
             <div className="p-6 flex-grow overflow-y-auto">
                 {loading ? (
                     <div className="flex flex-col items-center py-12 gap-4">
@@ -288,7 +291,7 @@ export default function ViewDetail({ owner, onClose }) {
                                                 <p className="font-medium text-gray-800">{customer.name}</p>
                                                 <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                                     <FiPhone size={12} />
-                                                    {customer.phoneno}
+                                                    {formatPhoneNumber(customer.phoneno)}
                                                 </p>
                                             </div>
                                             <div className="text-right">
@@ -304,7 +307,6 @@ export default function ViewDetail({ owner, onClose }) {
                 )}
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
                 <button
                     onClick={onClose}
@@ -331,7 +333,6 @@ export default function ViewDetail({ owner, onClose }) {
 
     const renderCustomersView = () => (
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col">
-            {/* Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
                 <button
                     onClick={() => setActiveTab('owner')}
@@ -352,7 +353,6 @@ export default function ViewDetail({ owner, onClose }) {
                 </button>
             </div>
 
-            {/* Quick Actions */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-4 bg-gray-50 border-b border-gray-100 sticky top-[76px] z-10">
                 <button
                     onClick={() => setActiveTab('addCustomer')}
@@ -384,15 +384,11 @@ export default function ViewDetail({ owner, onClose }) {
                 </button>
             </div>
 
-            {/* Customers List */}
             <div className="p-4 flex-grow overflow-y-auto">
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <Skeleton count={3} height={16} className="mb-2" />
-                                <Skeleton width={80} height={24} />
-                            </div>
+                            <div key={i} className="p-4 bg-gray-100 rounded-lg animate-pulse h-32"></div>
                         ))}
                     </div>
                 ) : customers.length === 0 ? (
@@ -424,52 +420,51 @@ export default function ViewDetail({ owner, onClose }) {
                         {customers.map((customer) => (
                             <div
                                 key={customer._id}
-                                className={`p-4 rounded-lg border ${customer.isDelivered ? 'border-green-100 bg-green-50' : 'border-red-100 bg-red-50'} shadow-xs hover:shadow-sm transition-shadow`}
+                                className={`p-4 rounded-lg border ${customer.isDelivered ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'
+                                    } shadow-xs hover:shadow-sm transition-shadow`}
                             >
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-medium text-gray-900 truncate">{customer.name}</h3>
-                                    <span className={`text-xs px-2 py-1 rounded-full ${customer.isDelivered ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="min-w-0">
+                                        <h3 className="font-medium text-gray-900 truncate">{customer.name}</h3>
+                                        <p className="text-sm text-gray-600 truncate">{formatPhoneNumber(customer.phoneno)}</p>
+                                    </div>
+                                    <span
+                                        className={`text-xs px-2 py-1 rounded-full ${customer.isDelivered ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+                                            } whitespace-nowrap`}
+                                    >
                                         {customer.isDelivered ? 'Delivered' : 'Pending'}
                                     </span>
                                 </div>
 
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex items-center gap-2 text-gray-700">
-                                        <FiPhone size={14} className="text-gray-500" />
-                                        <span>{customer.phoneno}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-gray-700">
+                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                                    <div className="flex items-center gap-2 text-sm text-gray-700">
                                         <FiDroplet size={14} className="text-gray-500" />
                                         <span>{customer.quantity} Ltr.</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-700">
+                                    <div className="flex items-center gap-2 text-sm text-gray-700">
                                         <FiDollarSign size={14} className="text-gray-500" />
-                                        <span>₹{customer.price?.toLocaleString() || 'N/A'}/Ltr.</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <FiCalendar size={12} />
-                                        <span>Added: {formatDate(customer.createdAt)}</span>
+                                        <span>₹{customer.price?.toLocaleString() || 'N/A'}</span>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end gap-1 mt-3 pt-3 border-t border-gray-100">
+                                <div className="flex justify-end gap-2 mt-3">
                                     <button
                                         onClick={() => openEditModal(customer)}
-                                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                                         aria-label="Edit"
                                     >
                                         <FiEdit2 size={16} />
                                     </button>
                                     <button
                                         onClick={() => openDeleteModal(customer)}
-                                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors"
                                         aria-label="Delete"
                                     >
                                         <FiTrash2 size={16} />
                                     </button>
                                     <button
                                         onClick={() => openAdditionalSaleModal(customer)}
-                                        className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-full transition-colors"
                                         aria-label="Add Sale"
                                     >
                                         <FiPlus size={16} />
@@ -485,7 +480,6 @@ export default function ViewDetail({ owner, onClose }) {
 
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start p-4 z-50 overflow-y-auto pt-20">
-            {/* Main container */}
             <div className="w-full max-w-6xl">
                 {activeTab === 'owner' && renderOwnerView()}
                 {activeTab === 'customers' && renderCustomersView()}
@@ -517,7 +511,6 @@ export default function ViewDetail({ owner, onClose }) {
                 )}
             </div>
 
-            {/* Modals */}
             {isEditOpen && selectedCustomer && (
                 <EditModal
                     customer={selectedCustomer}
