@@ -330,7 +330,7 @@ export default function ViewDetail({ owner, onClose }) {
 
     const renderCustomersView = () => (
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col">
-            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white flex items-center justify-between  z-10">
                 <button
                     onClick={() => setActiveTab('owner')}
                     className="flex items-center gap-2 text-white hover:text-blue-200 transition-colors"
