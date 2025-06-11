@@ -182,7 +182,7 @@ export default function ViewDetail({ owner, onClose }) {
     };
 
     const renderOwnerView = () => (
-        <div className='fixed top-0 '>
+        <div className='fixed top-0 flex justify-center items-center'>
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-auto flex flex-col">
             {/* Header */}
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl relative shadow-md">
@@ -335,8 +335,8 @@ export default function ViewDetail({ owner, onClose }) {
     );
 
     const renderCustomersView = () => (
-        <div className='fixed top-0 '>
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col h-[90vh]">
+        <div className='fixed top-0 flex justify-center items-center '>
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col">
             
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl shadow-md flex items-center justify-between sticky top-0 z-10">
                 <button
