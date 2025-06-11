@@ -40,7 +40,7 @@ export default function ViewDetail({ owner, onClose }) {
     const [viewAllCustomers, setViewAllCustomers] = useState(false);
     const [showAddCustomer, setShowAddCustomer] = useState(false);
     const [Showviewbill, setShowviewbill] = useState(false)
-    const [activeTab, setActiveTab] = useState('owner'); // 'owner', 'customers', 'addCustomer'
+    const [activeTab, setActiveTab] = useState('owner'); // 'owner', 'customers', 'addCustomer', 'ViewBill', 'MonthlyData', 'ViewSummary'
     const [isAddSaleOpen, setIsAddSaleOpen] = useState(false);
     const [selectedCustomerForSale, setSelectedCustomerForSale] = useState(null);
 
@@ -112,6 +112,7 @@ export default function ViewDetail({ owner, onClose }) {
             year: 'numeric'
         });
     };
+
     const openAdditionalSaleModal = (customer) => {
         setSelectedCustomerForSale(customer);
         setIsAddSaleOpen(true);
@@ -176,8 +177,8 @@ export default function ViewDetail({ owner, onClose }) {
     const handlebillSuccess = () => {
         setShowviewbill(false);
         fetchCustomers();
-        
-       
+
+
     };
 
     const renderOwnerView = () => (
@@ -332,9 +333,9 @@ export default function ViewDetail({ owner, onClose }) {
     );
 
     const renderCustomersView = () => (
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-auto flex flex-col">
-            {/* Header */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl relative shadow-md flex items-center justify-between">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-auto flex flex-col h-[90vh]"> {/* Added h-[90vh] for a defined height */}
+            {/* Header - Made Sticky */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl shadow-md flex items-center justify-between sticky top-0 z-10">
                 <button
                     onClick={() => setActiveTab('owner')}
                     className="flex items-center gap-2 text-white hover:text-blue-200 transition-colors p-2 rounded-full hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -354,6 +355,38 @@ export default function ViewDetail({ owner, onClose }) {
                 </button>
             </div>
 
+            {/* Navigation Buttons - Made Sticky */}
+            <div className='flex flex-wrap justify-center items-center gap-4 mb-6 p-4 bg-white border-b border-gray-100 sticky top-[80px] z-10'> {/* Adjusted top value based on header height */}
+                <button
+                    onClick={() => setActiveTab('addCustomer')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                >
+                    <FiPlusCircle size={18} />
+                    Add Customer
+                </button>
+                <button
+                    onClick={() => setActiveTab('ViewBill')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                >
+                    <FiDollarSign size={18} />
+                    View Bills
+                </button>
+                <button
+                    onClick={() => setActiveTab('ViewSummary')}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                >
+                    <FiDollarSign size={18} />
+                    View Summary
+                </button>
+                <button
+                    onClick={() => setActiveTab('MonthlyData')}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                >
+                    <FiCalendar size={18} />
+                    Monthly Data
+                </button>
+            </div>
+
             {/* Customers List Content */}
             <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
                 {loading ? (
@@ -367,39 +400,6 @@ export default function ViewDetail({ owner, onClose }) {
                     </div>
                 ) : (
                     <>
-                        <div className='flex justify-center items-center gap-4 mb-6'>
-                            <button
-                                onClick={() => setActiveTab('addCustomer')}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2 text-base font-medium"
-                            >
-                                <FiPlusCircle size={18} />
-                                Add Customer
-                            </button>
-                            <button
-                                    onClick={() => setActiveTab('ViewBill')}
-                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center gap-2 text-base font-medium"
-                            >
-                                <FiDollarSign size={18} />
-                                View Bills
-                            </button>
-                                <button
-                                    onClick={() => setActiveTab('ViewSummary')}
-                                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center gap-2 text-base font-medium"
-                                >
-                                    <FiDollarSign size={18} />
-                                    View Summary
-                                </button>
-                            
-                               
-                            <button
-                                    onClick={() => setActiveTab('MonthlyData')}
-                                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center gap-2 text-base font-medium"
-                            >
-                                <FiCalendar size={18} />
-                                Monthly Data
-                            </button>
-                        </div>
-
                         {customers.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-xl shadow-md border border-gray-100">
                                 <div className="max-w-md mx-auto">
@@ -484,7 +484,7 @@ export default function ViewDetail({ owner, onClose }) {
                                                 </button>
                                                 <button
                                                     onClick={() => openAdditionalSaleModal(customer)}
-                                                    className="p-2.5 rounded-full bg-yellow-100 text-white-600 hover:bg-red-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                                                    className="p-2.5 rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-300"
                                                     aria-label="Additional Sale"
                                                 >
                                                     <FiPlus size={18} />
@@ -535,7 +535,7 @@ export default function ViewDetail({ owner, onClose }) {
                 )}
             </div>
 
-            {/* Modals for Edit/Delete */}
+            {/* Modals for Edit/Delete/Add Sale (these will float on top of the main view) */}
             {isEditOpen && selectedCustomer && (
                 <EditModal
                     customer={selectedCustomer}
