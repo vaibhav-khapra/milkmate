@@ -115,10 +115,7 @@ export default function ViewDetail({ owner, onClose }) {
         });
     };
 
-    const formatPhoneNumber = (phone) => {
-        if (!phone) return 'N/A';
-        return phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-    };
+    
 
     const openAdditionalSaleModal = (customer) => {
         setSelectedCustomerForSale(customer);
@@ -291,7 +288,7 @@ export default function ViewDetail({ owner, onClose }) {
                                                 <p className="font-medium text-gray-800">{customer.name}</p>
                                                 <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                                     <FiPhone size={12} />
-                                                    {formatPhoneNumber(customer.phoneno)}
+                                                    {customer.phoneno}
                                                 </p>
                                             </div>
                                             <div className="text-right">
@@ -426,7 +423,7 @@ export default function ViewDetail({ owner, onClose }) {
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="min-w-0">
                                         <h3 className="font-medium text-gray-900 truncate">{customer.name}</h3>
-                                        <p className="text-sm text-gray-600 truncate">{formatPhoneNumber(customer.phoneno)}</p>
+                                        <p className="text-sm text-gray-600 truncate">{customer.phoneno}</p>
                                     </div>
                                     <span
                                         className={`text-xs px-2 py-1 rounded-full ${customer.isDelivered ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
