@@ -41,7 +41,6 @@ export default function CustomerList() {
 
     const fetchCustomers = async () => {
         if (!session?.user?.email) {
-            // Only attempt to fetch if user email is available
             return;
         }
 
