@@ -19,7 +19,10 @@ import {
     FiPlusCircle,
     FiInfo,
     FiUsers,
-    FiPlus
+    FiPlus,
+    FiBarChart2,
+    FiFileText,
+    FiHome
 } from 'react-icons/fi';
 import EditModal from '../components/EditModal';
 import DeleteModal from '../components/DeleteModal';
@@ -27,7 +30,6 @@ import AddCustomerModal from '../components/AddCustomerModal';
 import ViewBill from '../components/ViewBill';
 import Monthlydata from '../components/Monthlydata';
 import SummaryCards from './Summary';
-
 
 export default function ViewDetail({ owner, onClose }) {
     const [ownerData, setOwnerData] = useState(null);
@@ -40,7 +42,7 @@ export default function ViewDetail({ owner, onClose }) {
     const [viewAllCustomers, setViewAllCustomers] = useState(false);
     const [showAddCustomer, setShowAddCustomer] = useState(false);
     const [Showviewbill, setShowviewbill] = useState(false)
-    const [activeTab, setActiveTab] = useState('owner'); // 'owner', 'customers', 'addCustomer', 'ViewBill', 'MonthlyData', 'ViewSummary'
+    const [activeTab, setActiveTab] = useState('owner');
     const [isAddSaleOpen, setIsAddSaleOpen] = useState(false);
     const [selectedCustomerForSale, setSelectedCustomerForSale] = useState(null);
 
@@ -136,7 +138,7 @@ export default function ViewDetail({ owner, onClose }) {
                 toast.success('Additional sale recorded successfully!', {
                     position: 'top-center',
                 });
-                fetchCustomers(); // Refresh customer data
+                fetchCustomers();
                 return true;
             } else {
                 throw new Error(result.message || 'Error saving additional sale');
@@ -177,23 +179,20 @@ export default function ViewDetail({ owner, onClose }) {
     const handlebillSuccess = () => {
         setShowviewbill(false);
         fetchCustomers();
-
-
     };
 
     const renderOwnerView = () => (
-        <div className='fixed top-0 flex justify-center items-center'>
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-auto flex flex-col">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-auto flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl relative shadow-md">
-                <div className="flex justify-between items-center">
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white relative">
+                <div className="flex justify-between items-start">
                     <div>
-                        <h2 className="text-2xl font-bold font-display">Owner Profile</h2>
-                        <p className="text-blue-200 text-sm">Detailed information about the owner</p>
+                        <h2 className="text-2xl font-bold font-sans">Owner Profile</h2>
+                        <p className="text-blue-100 text-sm mt-1">Detailed information</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-white hover:text-blue-100 transition-colors p-2 rounded-full hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="text-white hover:text-blue-200 transition-colors p-1 rounded-full hover:bg-white/10"
                         aria-label="Close"
                     >
                         <FiX size={24} />
@@ -202,105 +201,102 @@ export default function ViewDetail({ owner, onClose }) {
             </div>
 
             {/* Content */}
-            <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
+            <div className="p-6 flex-grow overflow-y-auto">
                 {loading ? (
                     <div className="flex flex-col items-center py-12 gap-4">
-                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-                        <p className="text-gray-600 text-lg">Loading owner details...</p>
-                        <Skeleton count={3} height={40} className="w-3/4" />
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                        <p className="text-gray-600">Loading owner details...</p>
                     </div>
                 ) : error ? (
-                    <div className="bg-red-100 border-l-4 border-red-500 p-5 mb-6 rounded-lg text-red-800">
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-lg">
                         <div className="flex items-start">
-                            <div className="flex-shrink-0 pt-0.5">
-                                <FiInfo className="h-6 w-6 text-red-500" />
-                            </div>
+                            <FiInfo className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                             <div className="ml-3">
-                                <h3 className="text-lg font-semibold">Error loading data</h3>
-                                <p className="text-sm mt-1">{error}</p>
+                                <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
+                                <p className="text-sm text-red-700 mt-1">{error}</p>
                                 <button
                                     onClick={() => { setLoading(true); setError(null); fetchOwnerDetails(); fetchCustomers(); }}
-                                    className="mt-3 px-4 py-2 border border-red-400 rounded-md text-red-700 hover:bg-red-200 transition-colors text-sm font-medium flex items-center gap-1"
+                                    className="mt-2 inline-flex items-center text-sm font-medium text-red-700 hover:text-red-900"
                                 >
-                                    <FiRefreshCw size={16} /> Retry
+                                    <FiRefreshCw className="mr-1.5 h-4 w-4" /> Retry
                                 </button>
                             </div>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="flex items-center space-x-5 p-4 bg-blue-50 rounded-xl border border-blue-100 shadow-sm">
+                        <div className="flex items-center space-x-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
                             <div className="flex-shrink-0">
-                                <div className="h-20 w-20 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 text-3xl font-extrabold shadow-inner">
+                                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600 text-2xl font-bold">
                                     {ownerData?.name?.charAt(0)?.toUpperCase() || 'O'}
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-900 font-display">{ownerData?.name || 'N/A'}</h3>
-                                <p className="text-blue-700 flex items-center gap-2 mt-1 text-base">
-                                    <FiMail size={16} className="text-blue-500" />
+                                <h3 className="text-xl font-semibold text-gray-900">{ownerData?.name || 'N/A'}</h3>
+                                <p className="text-blue-600 flex items-center gap-1.5 mt-1 text-sm">
+                                    <FiMail size={14} />
                                     {ownerData?.email || 'N/A'}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 shadow-sm">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-4">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500 mb-1">Date Joined</p>
-                                    <p className="text-gray-900 font-semibold flex items-center gap-2">
-                                        <FiCalendar size={16} className="text-gray-400" />
-                                        {ownerData?.date
-                                            ? new Date(ownerData.date).toLocaleDateString('en-IN', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                            })
-                                            : 'N/A'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500 mb-1">Total Customers</p>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="text-3xl font-bold text-blue-600">{customersCount}</span>
-                                        <button
-                                            onClick={() => setActiveTab('customers')}
-                                            className="px-4 py-2 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-700 transition-all shadow-md flex items-center gap-2 transform hover:scale-105"
-                                        >
-                                            <FiUsers size={16} /> View All
-                                        </button>
-                                    </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</p>
+                                <p className="text-gray-900 font-medium flex items-center gap-1.5 mt-1">
+                                    <FiCalendar size={14} />
+                                    {ownerData?.date
+                                        ? new Date(ownerData.date).toLocaleDateString('en-IN', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                        })
+                                        : 'N/A'}
+                                </p>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Customers</p>
+                                <div className="flex items-center justify-between mt-1">
+                                    <span className="text-2xl font-bold text-blue-600">{customersCount}</span>
+                                    <button
+                                        onClick={() => setActiveTab('customers')}
+                                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                    >
+                                        <FiUsers size={12} /> View
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
                         {customers.length > 0 && (
                             <div>
-                                <h4 className="text-xl font-semibold text-gray-800 mb-4 font-display">Recent Customers</h4>
-                                <div className="space-y-4">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Recent Customers</h4>
+                                    {customers.length > 3 && (
+                                        <button
+                                            onClick={() => setActiveTab('customers')}
+                                            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                                        >
+                                            View all
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="space-y-3">
                                     {customers.slice(0, 3).map(customer => (
-                                        <div key={customer._id} className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
+                                        <div key={customer._id} className="p-3 bg-white rounded-lg border border-gray-100 shadow-xs hover:shadow-sm transition-shadow flex items-center justify-between">
                                             <div>
-                                                <p className="font-semibold text-gray-800 text-lg">{customer.name}</p>
-                                                <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                                                    <FiPhone size={14} className="text-gray-400" />
+                                                <p className="font-medium text-gray-800">{customer.name}</p>
+                                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                                    <FiPhone size={12} />
                                                     {customer.phoneno}
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-blue-600 font-bold text-lg">₹{customer.price?.toLocaleString() || 'N/A'}/Ltr.</p>
-                                                <p className="text-xs text-gray-500 mt-0.5">{customer.quantity} Ltr.</p>
+                                                <p className="text-blue-600 font-semibold">₹{customer.price?.toLocaleString() || 'N/A'}</p>
+                                                <p className="text-xs text-gray-500">{customer.quantity} Ltr.</p>
                                             </div>
                                         </div>
                                     ))}
-                                    {customers.length > 3 && (
-                                        <button
-                                            onClick={() => setActiveTab('customers')}
-                                            className="w-full text-center py-2 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                                        >
-                                            Show All {customersCount - 3} More Customers <FiChevronLeft size={14} className="rotate-180" />
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         )}
@@ -309,15 +305,15 @@ export default function ViewDetail({ owner, onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3 rounded-b-2xl shadow-inner">
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
                 <button
                     onClick={onClose}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-colors text-base font-medium flex items-center gap-2"
+                    className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
                 >
                     Close
                 </button>
                 <button
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-base font-medium flex items-center gap-2 shadow-md"
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
                     onClick={() => {
                         if (ownerData?.email) {
                             window.location.href = `mailto:${ownerData.email}`;
@@ -326,189 +322,171 @@ export default function ViewDetail({ owner, onClose }) {
                         }
                     }}
                 >
-                    <FiMail size={18} />
-                    Contact Owner
+                    <FiMail size={16} />
+                    Contact
                 </button>
             </div>
-        </div>
         </div>
     );
 
     const renderCustomersView = () => (
-        <div className='fixed top-0 flex justify-center items-center '>
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col">
-            
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white rounded-t-2xl shadow-md flex items-center justify-between sticky top-0 z-10">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white flex items-center justify-between sticky top-0 z-10">
                 <button
                     onClick={() => setActiveTab('owner')}
-                    className="flex items-center gap-2 text-white hover:text-blue-200 transition-colors p-2 rounded-full hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="flex items-center gap-2 text-white hover:text-blue-200 transition-colors"
                 >
-                    <FiChevronLeft size={24} />
-                    <span className="hidden sm:inline">Back to Owner</span>
+                    <FiChevronLeft size={20} />
+                    <span className="hidden sm:inline">Back</span>
                 </button>
-                <h2 className="text-2xl font-bold font-display text-center flex-grow">
-                    Customers for {ownerData?.name || 'N/A'}
+                <h2 className="text-xl font-bold text-center">
+                    {ownerData?.name || 'Owner'}'s Customers
                 </h2>
                 <button
                     onClick={onClose}
-                    className="text-white hover:text-blue-100 transition-colors p-2 rounded-full hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="text-white hover:text-blue-200 transition-colors p-1 rounded-full hover:bg-white/10"
                     aria-label="Close"
                 >
                     <FiX size={24} />
                 </button>
             </div>
 
-            {/* Navigation Buttons - Made Sticky */}
-            <div className='flex flex-wrap justify-center items-center gap-4 mb-6 p-4 bg-white border-b border-gray-100 sticky top-[80px] z-10'> {/* Adjusted top value based on header height */}
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-4 bg-gray-50 border-b border-gray-100 sticky top-[76px] z-10">
                 <button
                     onClick={() => setActiveTab('addCustomer')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                    className="flex flex-col items-center p-2 bg-white rounded-lg shadow-xs hover:shadow-sm transition-all"
                 >
-                    <FiPlusCircle size={18} />
-                    Add Customer
+                    <FiPlusCircle className="text-blue-600 mb-1" size={18} />
+                    <span className="text-xs font-medium">Add Customer</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('ViewBill')}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                    className="flex flex-col items-center p-2 bg-white rounded-lg shadow-xs hover:shadow-sm transition-all"
                 >
-                    <FiDollarSign size={18} />
-                    View Bills
+                    <FiFileText className="text-green-600 mb-1" size={18} />
+                    <span className="text-xs font-medium">View Bills</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('ViewSummary')}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                    className="flex flex-col items-center p-2 bg-white rounded-lg shadow-xs hover:shadow-sm transition-all"
                 >
-                    <FiDollarSign size={18} />
-                    View Summary
+                    <FiBarChart2 className="text-yellow-600 mb-1" size={18} />
+                    <span className="text-xs font-medium">Summary</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('MonthlyData')}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+                    className="flex flex-col items-center p-2 bg-white rounded-lg shadow-xs hover:shadow-sm transition-all"
                 >
-                    <FiCalendar size={18} />
-                    Monthly Data
+                    <FiCalendar className="text-purple-600 mb-1" size={18} />
+                    <span className="text-xs font-medium">Monthly Data</span>
                 </button>
             </div>
 
-            {/* Customers List Content */}
-            <div className="p-6 flex-grow overflow-y-auto custom-scrollbar">
+            {/* Customers List */}
+            <div className="p-4 flex-grow overflow-y-auto">
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="p-6 bg-gray-50 rounded-xl shadow-sm border border-gray-100">
-                                <Skeleton count={4} height={20} className="mb-3" />
-                                <Skeleton width={100} height={30} />
+                            <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                <Skeleton count={3} height={16} className="mb-2" />
+                                <Skeleton width={80} height={24} />
                             </div>
                         ))}
                     </div>
+                ) : customers.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="mx-auto w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                            <FiUsers className="text-blue-400 text-2xl" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-800 mb-2">No customers found</h3>
+                        <p className="text-gray-600 mb-6 max-w-md mx-auto">Add new customers to start managing their water deliveries</p>
+                        <div className="flex justify-center gap-3">
+                            <button
+                                onClick={() => setActiveTab('addCustomer')}
+                                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            >
+                                <FiPlusCircle size={16} />
+                                Add Customer
+                            </button>
+                            <button
+                                onClick={() => { setLoading(true); setError(null); fetchCustomers(); }}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+                            >
+                                <FiRefreshCw size={16} />
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
                 ) : (
-                    <>
-                        {customers.length === 0 ? (
-                            <div className="text-center py-20 bg-white rounded-xl shadow-md border border-gray-100">
-                                <div className="max-w-md mx-auto">
-                                    <div className="w-28 h-28 mx-auto bg-blue-50 rounded-full flex items-center justify-center mb-8 shadow-inner">
-                                        <FiUsers className="text-blue-400 text-5xl" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {customers.map((customer) => (
+                            <div
+                                key={customer._id}
+                                className={`p-4 rounded-lg border ${customer.isDelivered ? 'border-green-100 bg-green-50' : 'border-red-100 bg-red-50'} shadow-xs hover:shadow-sm transition-shadow`}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-medium text-gray-900 truncate">{customer.name}</h3>
+                                    <span className={`text-xs px-2 py-1 rounded-full ${customer.isDelivered ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        {customer.isDelivered ? 'Delivered' : 'Pending'}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                        <FiPhone size={14} className="text-gray-500" />
+                                        <span>{customer.phoneno}</span>
                                     </div>
-                                    <h3 className="text-2xl font-semibold text-gray-800 mb-3 font-display">No customers found</h3>
-                                    <p className="text-gray-600 mb-8 leading-relaxed">This owner doesn't have any customers yet. Add new customers to get started!</p>
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                        <FiDroplet size={14} className="text-gray-500" />
+                                        <span>{customer.quantity} Ltr.</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                        <FiDollarSign size={14} className="text-gray-500" />
+                                        <span>₹{customer.price?.toLocaleString() || 'N/A'}/Ltr.</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <FiCalendar size={12} />
+                                        <span>Added: {formatDate(customer.createdAt)}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-1 mt-3 pt-3 border-t border-gray-100">
                                     <button
-                                        onClick={() => setActiveTab('addCustomer')}
-                                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center gap-3 mx-auto text-base font-medium"
+                                        onClick={() => openEditModal(customer)}
+                                        className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                        aria-label="Edit"
                                     >
-                                        <FiPlusCircle size={18} />
-                                        Add New Customer
+                                        <FiEdit2 size={16} />
                                     </button>
                                     <button
-                                        onClick={() => { setLoading(true); setError(null); fetchCustomers(); }}
-                                        className="mt-4 px-8 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors shadow-md flex items-center gap-3 mx-auto text-base font-medium"
+                                        onClick={() => openDeleteModal(customer)}
+                                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                        aria-label="Delete"
                                     >
-                                        <FiRefreshCw size={18} />
-                                        Refresh Customers
+                                        <FiTrash2 size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => openAdditionalSaleModal(customer)}
+                                        className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                                        aria-label="Add Sale"
+                                    >
+                                        <FiPlus size={16} />
                                     </button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                                {customers.map((customer) => (
-                                    <div
-                                        key={customer._id}
-                                        className={`p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow border-t-4
-                                            ${customer.isDelivered ? 'bg-white border-green-500' : 'bg-red-50 border-red-500'}
-                                        `}
-                                    >
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <FiUser className="text-gray-500 flex-shrink-0" size={18} />
-                                                <p className="font-semibold text-gray-900 text-lg truncate">{customer.name}</p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <FiPhone className="text-gray-500 flex-shrink-0" size={18} />
-                                                <p className="text-gray-700 text-base">{customer.phoneno}</p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <FiDroplet className="text-gray-500 flex-shrink-0" size={18} />
-                                                <p className="text-gray-700 text-base">
-                                                    <span className="font-medium">Quantity:</span> {customer.quantity} Ltr.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <FiDollarSign className="text-gray-500 flex-shrink-0" size={18} />
-                                                <p className="text-gray-700 text-base">
-                                                    <span className="font-medium">Price:</span> ₹{customer.price?.toLocaleString() || 'N/A'}/Ltr.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <FiCalendar className="text-gray-500 flex-shrink-0" size={18} />
-                                                <p className="text-sm text-gray-600">
-                                                    Added: {formatDate(customer.createdAt)}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
-                                            <span className={`text-sm px-3 py-1.5 rounded-full font-semibold shadow-sm
-                                                ${customer.isDelivered ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                {customer.isDelivered ? 'Delivered' : 'Pending'}
-                                            </span>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => openEditModal(customer)}
-                                                    className="p-2.5 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                                    aria-label="Edit Customer"
-                                                >
-                                                    <FiEdit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openDeleteModal(customer)}
-                                                    className="p-2.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-red-300"
-                                                    aria-label="Delete Customer"
-                                                >
-                                                    <FiTrash2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => openAdditionalSaleModal(customer)}
-                                                    className="p-2.5 rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-300"
-                                                    aria-label="Additional Sale"
-                                                >
-                                                    <FiPlus size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
+                        ))}
+                    </div>
                 )}
             </div>
-        </div>
         </div>
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fade-in overflow-y-auto">
-            {/* Main container that centers both modals */}
-            <div className="w-full max-w-6xl flex justify-center items-start my-8">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start p-4 z-50 overflow-y-auto pt-20">
+            {/* Main container */}
+            <div className="w-full max-w-6xl">
                 {activeTab === 'owner' && renderOwnerView()}
                 {activeTab === 'customers' && renderCustomersView()}
                 {activeTab === 'addCustomer' && (
@@ -539,7 +517,7 @@ export default function ViewDetail({ owner, onClose }) {
                 )}
             </div>
 
-            {/* Modals for Edit/Delete/Add Sale (these will float on top of the main view) */}
+            {/* Modals */}
             {isEditOpen && selectedCustomer && (
                 <EditModal
                     customer={selectedCustomer}
@@ -563,9 +541,9 @@ export default function ViewDetail({ owner, onClose }) {
                         setIsAddSaleOpen(false);
                         setSelectedCustomerForSale(null);
                     }}
-                    customers={[selectedCustomerForSale]} // Pass only the selected customer
+                    customers={[selectedCustomerForSale]}
                     onSave={handleSaveAdditionalSale}
-                    session={{ user: { email: owner } }} // Mock session object
+                    session={{ user: { email: owner } }}
                 />
             )}
         </div>
