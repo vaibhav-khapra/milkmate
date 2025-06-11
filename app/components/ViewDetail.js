@@ -350,7 +350,7 @@ export default function ViewDetail({ owner, onClose }) {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-4 bg-gray-50 border-b border-gray-100 sticky top-[76px] z-10">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-4 bg-gray-50 border-b border-gray-100 z-10">
                 <button
                     onClick={() => setActiveTab('addCustomer')}
                     className="flex flex-col items-center p-2 bg-white rounded-lg shadow-xs hover:shadow-sm transition-all"
@@ -476,8 +476,8 @@ export default function ViewDetail({ owner, onClose }) {
     );
 
     return (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start p-4 z-50 overflow-y-auto pt-20">
-            <div className="w-full max-w-6xl">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-start p-4 z-50 overflow-y-auto ">
+            <div className="w-full flex items-center justify-center ">
                 {activeTab === 'owner' && renderOwnerView()}
                 {activeTab === 'customers' && renderCustomersView()}
                 {activeTab === 'addCustomer' && (
