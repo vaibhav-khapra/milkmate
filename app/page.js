@@ -8,6 +8,7 @@ import { FiArrowRight } from "react-icons/fi";
 import { FaCheckCircle } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { fadeIn, staggerContainer, slideIn, zoomIn } from "./utils/motion";
+import Link from "next/link";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -251,7 +252,11 @@ export default function Home() {
           variants={fadeIn('up', 'tween', 0.3, 1)}
           className="max-w-6xl mt-2 mx-auto px-4 text-center"
         >
-          <p>Developed by Vaibhav Khapra</p>
+          <Link href="vaibhavkhapra.vercel.app">
+            <p>Developed by Vaibhav Khapra</p>
+            </Link>
+
+        
         </motion.div>
       </motion.footer>
     </div>
