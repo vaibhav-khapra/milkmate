@@ -252,9 +252,12 @@ export default function Home() {
           variants={fadeIn('up', 'tween', 0.3, 1)}
           className="max-w-6xl mt-2 mx-auto px-4 text-center"
         >
-          <Link href="vaibhavkhapra.vercel.app">
-            <p>Developed by Vaibhav Khapra</p>
-            </Link>
+         
+
+          <Link href="https://vaibhavkhapra.vercel.app" target="_blank" rel="noopener noreferrer">
+            Developed by Vaibhav Khapra
+          </Link>
+
 
         
         </motion.div>
