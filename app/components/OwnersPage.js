@@ -251,7 +251,7 @@ export default function OwnersPage() {
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                                            <span>Joined: {new Date(owner.date).toLocaleDateString()}</span>
+                                            <span>Joined: {new Date(owner.date).toLocaleDateString('en-IN')}</span>
                                             <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                                                 Active
                                             </span>
